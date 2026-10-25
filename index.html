@@ -117,16 +117,21 @@
 
   <!-- ========================================== -->
   <!-- CONFIG & STATE SETUP                      -->
-  <!-- ========================================== -->
   <script>
-    // Mode switcher: set IS_PREVIEW to false and provide GAS_URL for production
-    const IS_PREVIEW = false;
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbynG4h4rVKS9zDSDhL5yjQLFNFvgmUv1uz4TsnNN96M6Z8VFdQ5nqVlwDS3kqSjTTweXQ/exec";
+    // Web App Google Apps Script Endpoint URL (Auto-detected if embedded or saved in localStorage)
+    let GAS_URL = localStorage.getItem("SiHADIR_GAS_URL") || "https://script.google.com/macros/s/AKfycbxwNXEy5PYhGevtW-jdGuoU0U-ZwiSOXSItSwUHNmP3r09BVPUUKULS230ZWvYr86iA/exec";
+
+    function setGasUrl(url) {
+      if (url) {
+        GAS_URL = url.trim();
+        localStorage.setItem("SiHADIR_GAS_URL", GAS_URL);
+      }
+    }
 
     // Application Global State
     let currentUser = null;
     let currentView = 'dashboard';
-    let db = {}; // In-memory/localStorage synchronized database
+    let db = {}; // Synced database state with Google Sheets
     let activeMediaStream = null;
     let lastSyncTimestamp = null;
   </script>
@@ -157,7 +162,7 @@
             </div>
             <input type="text" id="login-nip" required
                    class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                   placeholder="Masukkan NIP atau Username" value="admin">
+                   placeholder="Masukkan NIP atau Username" autocomplete="username">
           </div>
         </div>
 
@@ -169,7 +174,7 @@
             </div>
             <input type="password" id="login-pass" required
                    class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                   placeholder="••••••••" value="edudigital">
+                   placeholder="Masukkan Password" autocomplete="current-password">
           </div>
         </div>
 
@@ -182,17 +187,15 @@
         </div>
       </form>
 
-      <!-- Quick Demo Account Switcher -->
-      <div class="mt-6 pt-5 border-t border-slate-200/80 text-center">
-        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Akun Demo Cepat</p>
-        <div class="flex justify-center gap-2">
-          <button onclick="fillDemoLogin('admin', 'edudigital')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
-            <i class="fas fa-user-shield text-blue-600 mr-1"></i> Admin
-          </button>
-          <button onclick="fillDemoLogin('1547777678230092', 'edudigital')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
-            <i class="fas fa-chalkboard-teacher text-indigo-600 mr-1"></i> Guru (Febby)
-          </button>
-        </div>
+      <!-- Server Connection Status Footer -->
+      <div class="mt-6 pt-4 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500">
+        <span class="flex items-center gap-1.5">
+          <i class="fas fa-database text-emerald-500"></i>
+          <span>Basis Data: Google Sheets</span>
+        </span>
+        <button type="button" onclick="configureServerUrlModal()" class="text-blue-600 hover:underline font-medium">
+          <i class="fas fa-cog text-[10px] mr-1"></i>URL Server
+        </button>
       </div>
     </div>
   </div>
@@ -523,98 +526,21 @@
   <!-- ========================================== -->
   <script>
     // -------------------------------------------------------------------------
-    // A. INITIAL DATABASE SEEDING & LOCALSTORAGE SYNC
+    // A. INITIAL DATABASE & STATE MANAGEMENT (100% PRODUCTION GOOGLE SHEETS)
     // -------------------------------------------------------------------------
     const STORAGE_KEY = "SiHADIR_SIGMA71_DB_V5";
 
     function initDatabase() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          db = JSON.parse(saved);
-          ensureDatabaseIntegrity();
-          return;
-        } catch(e) {
-          console.warn("Storage reset needed");
-        }
-      }
-
-      // Default Seed Data
-      const today = new Date().toISOString().split('T')[0];
-      const nowIso = new Date().toISOString();
-
+      // Clean production baseline: no fake attendance, no fake photos, no fake duty schedules
       db = {
-        users: [
-          { userId: "USR_ADMIN", employeeId: "EMP_ADMIN", username: "admin", password: "edudigital", email: "admin@smpn71bandung.sch.id", role: "ADMIN", nama: "Administrator", statusAkun: "AKTIF" },
-          { userId: "USR_FEBBY", employeeId: "EMP_FEBBY", username: "1547777678230092", password: "edudigital", email: "febby@smpn71bandung.sch.id", role: "GURU", nama: "Febby Febrianti, S.Pd., Gr", statusAkun: "AKTIF" },
-          { userId: "USR_YENI", employeeId: "EMP_YENI", username: "4550770671230292", password: "edudigital", email: "yeni@smpn71bandung.sch.id", role: "GURU", nama: "Yeni Febrianti, S.Pd., Gr", statusAkun: "AKTIF" }
-        ],
-        employees: [
-          { employeeId: "EMP_ADMIN", nip: "admin", nama: "Administrator", email: "admin@smpn71bandung.sch.id", jabatan: "Kepala Tata Usaha", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "Tata Usaha", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" },
-          { employeeId: "EMP_FEBBY", nip: "1547777678230092", nama: "Febby Febrianti, S.Pd., Gr", email: "febby@smpn71bandung.sch.id", jabatan: "Guru IPA", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "SMP Negeri 71 Bandung", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" },
-          { employeeId: "EMP_YENI", nip: "4550770671230292", nama: "Yeni Febrianti, S.Pd., Gr", email: "yeni@smpn71bandung.sch.id", jabatan: "Guru Matematika", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "SMP Negeri 71 Bandung", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" }
-        ],
-        faceRegistrations: [
-          { faceId: "FCE_FEBBY", employeeId: "EMP_FEBBY", status: "TERDAFTAR", imageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80", registeredAt: today },
-          { faceId: "FCE_ADMIN", employeeId: "EMP_ADMIN", status: "BELUM_TERDAFTAR", imageUrl: "", registeredAt: "" },
-          { faceId: "FCE_YENI", employeeId: "EMP_YENI", status: "BELUM_TERDAFTAR", imageUrl: "", registeredAt: "" }
-        ],
-        attendance: [
-          {
-            attendanceId: "ATT_001",
-            employeeId: "EMP_FEBBY",
-            nip: "1547777678230092",
-            nama: "Febby Febrianti, S.Pd., Gr",
-            jabatan: "Guru IPA",
-            unitKerja: "SMP Negeri 71 Bandung",
-            tanggal: today,
-            jamMasuk: "07:15:00",
-            statusMasuk: "Hadir",
-            fotoMasukUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
-            lokasiMasuk: "-6.921470, 107.607490",
-            jarakMasuk: 12,
-            jamPulang: "",
-            statusPulang: "",
-            fotoPulangUrl: "",
-            lokasiPulang: "",
-            jarakPulang: 0,
-            lokasiTugas: "Kampus Utama"
-          }
-        ],
-        leaveRequests: [
-          {
-            leaveId: "LVE_001",
-            employeeId: "EMP_YENI",
-            nama: "Yeni Febrianti, S.Pd., Gr",
-            nip: "4550770671230292",
-            jabatan: "Guru Matematika",
-            tanggalPengajuan: today,
-            jenisIzin: "Sakit",
-            tanggalMulai: today,
-            tanggalSelesai: today,
-            periode: `${today} s.d. ${today}`,
-            keterangan: "Pemeriksaan medis rutin di RS Hermina Arcamanik",
-            fileBuktiUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=300&q=80",
-            status: "MENUNGGU",
-            catatanAdmin: "-",
-            diputuskanOleh: "-"
-          }
-        ],
-        announcements: [
-          {
-            announcementId: "ANN_001",
-            judul: "Sosialisasi Presensi Mandiri SiHADIR SIGMA 71",
-            isi: "Diberitahukan kepada seluruh Guru dan Tenaga Kependidikan untuk melakukan perekaman wajah (Daftar Wajah) sebelum jadwal absensi reguler diberlakukan penuh.",
-            kategori: "Informasi",
-            dibuatOleh: "Administrator",
-            tanggalPublikasi: today,
-            status: "DIPUBLIKASIKAN"
-          }
-        ],
-        dutySchedules: [
-          { jadwalId: "JDW_01", employeeId: "EMP_FEBBY", namaPetugas: "Febby Febrianti, S.Pd., Gr", nip: "1547777678230092", hari: "Senin", tugasPosisi: "Piket Gerbang Utama & Ketertiban", lokasi: "Pintu Masuk Barat" },
-          { jadwalId: "JDW_02", employeeId: "EMP_YENI", namaPetugas: "Yeni Febrianti, S.Pd., Gr", nip: "4550770671230292", hari: "Senin", tugasPosisi: "Piket Ruang Guru & Presensi Kelas", lokasi: "Lobi Gedung A" }
-        ],
+        users: [],
+        employees: [],
+        faceRegistrations: [],
+        attendance: [],
+        leaveRequests: [],
+        announcements: [],
+        dutySchedules: [],
+        notifications: [],
         settings: {
           app_name: "SiHADIR SIGMA 71",
           app_subtitle: "Sistem Informasi Kehadiran Menggunakan GPS dan Verifikasi Wajah",
@@ -638,38 +564,35 @@
           { scheduleId: "SCH_6", hari: "Sabtu", liburMingguan: true, masukMulai: "08:00", masukSelesai: "09:00", pulangMulai: "13:00", pulangSelesai: "15:00" },
           { scheduleId: "SCH_7", hari: "Minggu", liburMingguan: true, masukMulai: "08:00", masukSelesai: "09:00", pulangMulai: "13:00", pulangSelesai: "15:00" }
         ],
-        holidays: [
-          { holidayId: "HLD_01", tanggal: "2026-10-28", keterangan: "Hari Sumpah Pemuda (Libur Pembelajaran)" }
-        ],
-        notifications: [
-          {
-            notificationId: "NTF_001",
-            recipientUserId: "USR_FEBBY",
-            judul: "Pengumuman Baru Sekolah",
-            pesan: "Sosialisasi Presensi Mandiri SiHADIR SIGMA 71 telah dipublikasikan.",
-            jenis: "PENGUMUMAN",
-            targetUrl: "pengumuman",
-            statusBaca: false,
-            createdAt: nowIso
-          }
-        ]
+        holidays: []
       };
 
-      saveDatabase();
+      // Load cached server data if available
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.settings) db.settings = { ...db.settings, ...parsed.settings };
+            if (Array.isArray(parsed.workSchedules)) db.workSchedules = parsed.workSchedules;
+            if (Array.isArray(parsed.holidays)) db.holidays = parsed.holidays;
+            if (Array.isArray(parsed.announcements)) db.announcements = parsed.announcements;
+            if (Array.isArray(parsed.dutySchedules)) db.dutySchedules = parsed.dutySchedules;
+            if (Array.isArray(parsed.employees)) db.employees = parsed.employees;
+            if (Array.isArray(parsed.attendance)) db.attendance = parsed.attendance;
+            if (Array.isArray(parsed.leaveRequests)) db.leaveRequests = parsed.leaveRequests;
+            if (Array.isArray(parsed.faceRegistrations)) db.faceRegistrations = parsed.faceRegistrations;
+          }
+        } catch(e) {}
+      }
+      ensureDatabaseIntegrity();
     }
 
     function ensureDatabaseIntegrity() {
-      // Compatibility helper to ensure employeeId & pegawaiId are normalized
       if (db.employees) {
         db.employees.forEach(e => {
           if (!e.employeeId && e.pegawaiId) e.employeeId = e.pegawaiId;
           if (!e.pegawaiId && e.employeeId) e.pegawaiId = e.employeeId;
-        });
-      }
-      if (db.users) {
-        db.users.forEach(u => {
-          if (!u.employeeId && u.pegawaiId) u.employeeId = u.pegawaiId;
-          if (!u.pegawaiId && u.employeeId) u.pegawaiId = u.employeeId;
         });
       }
       if (db.attendance) {
@@ -681,7 +604,9 @@
     }
 
     function saveDatabase() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      } catch(e) {}
       lastSyncTimestamp = new Date();
       updateSyncBadge();
     }
@@ -689,515 +614,140 @@
     function updateSyncBadge() {
       const el = document.getElementById('header-sync-badge');
       if (el && lastSyncTimestamp) {
-        const timeStr = lastSyncTimestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const timeStr = lastSyncTimestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         el.innerHTML = `<i class="fas fa-circle text-[7px] mr-1 text-emerald-500 animate-pulse"></i>Tersinkron: ${timeStr} WIB`;
       }
     }
 
-    // -------------------------------------------------------------------------
-    // B. UNIVERSAL API DISPATCHER & REAL-TIME SYNC ENGINE
-    // -------------------------------------------------------------------------
-    async function apiCall(action, payload = {}) {
-      if (!IS_PREVIEW) {
-        try {
-          const resp = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action, ...payload })
-          });
-          return await resp.json();
-        } catch (err) {
-          return { success: false, message: "Koneksi ke Google Apps Script gagal: " + err.message };
+    // Modal to configure Google Apps Script Web App URL if running externally
+    function configureServerUrlModal() {
+      Swal.fire({
+        title: 'Konfigurasi URL Google Apps Script',
+        html: `
+          <div class="text-left text-xs space-y-2">
+            <p class="text-slate-600">Jika aplikasi di-embed di Blogger atau situs eksternal, masukkan Web App URL deployment Google Apps Script (berakhiran <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">/exec</code>):</p>
+            <input type="url" id="input-modal-gas-url" value="${GAS_URL || ''}" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs mt-2 focus:ring-blue-500">
+            <p class="text-[11px] text-slate-400">Jika aplikasi dijalankan langsung sebagai Web App di Google Apps Script, URL ini tidak diperlukan karena otomatis menggunakan koneksi native.</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan URL',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#2563eb',
+        preConfirm: () => {
+          return document.getElementById('input-modal-gas-url').value.trim();
         }
-      }
-
-      // LOCALSTORAGE ENGINE SIMULATOR (100% Offline & Preview Reliability)
-      return new Promise(resolve => {
-        setTimeout(() => {
-          // Re-read latest storage before action
-          const latestRaw = localStorage.getItem(STORAGE_KEY);
-          if (latestRaw) {
-            try { db = JSON.parse(latestRaw); } catch(e) {}
-          }
-
-          switch (action) {
-            case 'login': {
-              const u = db.users.find(item => 
-                (item.username === payload.nip || item.email === payload.nip) && 
-                item.password === payload.password
-              );
-              if (!u) {
-                return resolve({ success: false, message: "NIP / Username atau Password salah!" });
-              }
-              if (u.statusAkun !== "AKTIF") {
-                return resolve({ success: false, message: "Akun ini dinonaktifkan." });
-              }
-              const emp = db.employees.find(e => (e.employeeId || e.pegawaiId) === (u.employeeId || u.pegawaiId)) || {};
-              const face = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === (u.employeeId || u.pegawaiId));
-              return resolve({
-                success: true,
-                data: {
-                  userId: u.userId,
-                  employeeId: emp.employeeId || u.employeeId,
-                  pegawaiId: emp.employeeId || u.employeeId,
-                  username: u.username,
-                  nama: emp.nama || u.nama,
-                  nip: emp.nip || u.username,
-                  email: emp.email || u.email,
-                  jabatan: emp.jabatan || (u.role === 'ADMIN' ? 'Administrator' : 'Guru'),
-                  role: u.role,
-                  satuanPendidikan: emp.satuanPendidikan || 'SMP Negeri 71 Bandung',
-                  unitKerja: emp.unitKerja || 'SMP Negeri 71 Bandung',
-                  lokasiPenugasan: emp.lokasiPenugasan || 'Kampus Utama',
-                  statusWajah: face ? face.status : 'BELUM_TERDAFTAR',
-                  statusAkun: u.statusAkun
-                }
-              });
-            }
-
-            case 'getPegawai': {
-              const faceMap = {};
-              db.faceRegistrations.forEach(f => { faceMap[f.employeeId || f.pegawaiId] = f.status; });
-              const list = db.employees.map(e => ({
-                ...e,
-                statusWajah: faceMap[e.employeeId || e.pegawaiId] || "BELUM_TERDAFTAR"
-              }));
-              return resolve({ success: true, data: list });
-            }
-
-            case 'createPegawai': {
-              const empId = "EMP_" + Date.now();
-              const uId = "USR_" + Date.now();
-              db.employees.push({
-                employeeId: empId,
-                pegawaiId: empId,
-                nip: payload.data.nip,
-                nama: payload.data.nama,
-                email: payload.data.email,
-                jabatan: payload.data.jabatan,
-                satuanPendidikan: payload.data.satuanPendidikan || "SMP Negeri 71 Bandung",
-                unitKerja: payload.data.unitKerja || "SMP Negeri 71 Bandung",
-                lokasiPenugasan: payload.data.lokasiPenugasan || "Kampus Utama",
-                statusAkun: payload.data.statusAkun || "AKTIF"
-              });
-              db.users.push({
-                userId: uId,
-                employeeId: empId,
-                pegawaiId: empId,
-                username: payload.data.nip,
-                password: payload.data.password || "edudigital",
-                email: payload.data.email,
-                role: payload.data.role || "GURU",
-                nama: payload.data.nama,
-                statusAkun: payload.data.statusAkun || "AKTIF"
-              });
-              db.faceRegistrations.push({
-                faceId: "FCE_" + Date.now(),
-                employeeId: empId,
-                pegawaiId: empId,
-                status: "BELUM_TERDAFTAR",
-                imageUrl: "",
-                registeredAt: ""
-              });
-              saveDatabase();
-              return resolve({ success: true, message: "Pegawai baru berhasil ditambahkan." });
-            }
-
-            case 'updatePegawai': {
-              const id = payload.employeeId || payload.pegawaiId;
-              const emp = db.employees.find(e => (e.employeeId || e.pegawaiId) === id);
-              if (emp) {
-                Object.assign(emp, payload.data);
-                const user = db.users.find(u => (u.employeeId || u.pegawaiId) === id);
-                if (user) {
-                  user.nama = payload.data.nama;
-                  user.email = payload.data.email;
-                  user.statusAkun = payload.data.statusAkun;
-                  if (payload.data.password) user.password = payload.data.password;
-                }
-                saveDatabase();
-                return resolve({ success: true, message: "Data pegawai diperbarui." });
-              }
-              return resolve({ success: false, message: "Pegawai tidak ditemukan." });
-            }
-
-            case 'deletePegawai': {
-              const id = payload.employeeId || payload.pegawaiId;
-              const emp = db.employees.find(e => (e.employeeId || e.pegawaiId) === id);
-              if (emp) {
-                emp.statusAkun = "NONAKTIF";
-                const user = db.users.find(u => (u.employeeId || u.pegawaiId) === id);
-                if (user) user.statusAkun = "NONAKTIF";
-                saveDatabase();
-                return resolve({ success: true, message: "Status akun dinonaktifkan untuk menjaga histori." });
-              }
-              return resolve({ success: false, message: "Pegawai tidak ditemukan." });
-            }
-
-            case 'getAttendance': {
-              let list = [...db.attendance];
-              const targetId = payload.filters?.employeeId || payload.filters?.pegawaiId;
-              if (targetId) {
-                list = list.filter(r => (r.employeeId || r.pegawaiId) === targetId);
-              }
-              if (payload.filters?.startDate) {
-                list = list.filter(r => r.tanggal >= payload.filters.startDate);
-              }
-              if (payload.filters?.endDate) {
-                list = list.filter(r => r.tanggal <= payload.filters.endDate);
-              }
-              if (payload.filters?.status && payload.filters.status !== 'SEMUA') {
-                list = list.filter(r => r.statusMasuk === payload.filters.status || r.statusPulang === payload.filters.status);
-              }
-              if (payload.filters?.search) {
-                const q = payload.filters.search.toLowerCase();
-                list = list.filter(r => r.nama.toLowerCase().includes(q) || r.nip.toLowerCase().includes(q));
-              }
-              list.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
-              return resolve({ success: true, data: list });
-            }
-
-            case 'submitAttendance': {
-              const today = new Date().toISOString().split('T')[0];
-              const nowTime = new Date().toLocaleTimeString('id-ID', { hour12: false });
-              const targetEmpId = payload.data.employeeId || payload.data.pegawaiId;
-              let existing = db.attendance.find(r => (r.employeeId || r.pegawaiId) === targetEmpId && r.tanggal === today);
-              
-              if (payload.data.type === 'MASUK') {
-                if (existing && existing.jamMasuk) {
-                  return resolve({ success: false, message: "Anda sudah melakukan absensi masuk hari ini." });
-                }
-                if (!existing) {
-                  existing = {
-                    attendanceId: "ATT_" + Date.now(),
-                    employeeId: targetEmpId,
-                    pegawaiId: targetEmpId,
-                    nip: currentUser.nip,
-                    nama: currentUser.nama,
-                    jabatan: currentUser.jabatan,
-                    unitKerja: currentUser.unitKerja,
-                    tanggal: today,
-                    jamMasuk: nowTime,
-                    statusMasuk: payload.data.status || "Hadir",
-                    fotoMasukUrl: payload.data.imageBase64,
-                    lokasiMasuk: `${payload.data.latitude}, ${payload.data.longitude}`,
-                    jarakMasuk: payload.data.distanceMeter,
-                    jamPulang: "",
-                    statusPulang: "",
-                    fotoPulangUrl: "",
-                    lokasiPulang: "",
-                    jarakPulang: 0,
-                    lokasiTugas: payload.data.lokasiTugas || "Kampus Utama"
-                  };
-                  db.attendance.unshift(existing);
-                } else {
-                  existing.jamMasuk = nowTime;
-                  existing.statusMasuk = payload.data.status || "Hadir";
-                  existing.fotoMasukUrl = payload.data.imageBase64;
-                  existing.lokasiMasuk = `${payload.data.latitude}, ${payload.data.longitude}`;
-                  existing.jarakMasuk = payload.data.distanceMeter;
-                }
-                saveDatabase();
-                return resolve({ success: true, message: `Absensi masuk berhasil pada ${nowTime} WIB.`, data: existing });
-              } 
-              else if (payload.data.type === 'PULANG') {
-                if (!existing || !existing.jamMasuk) {
-                  return resolve({ success: false, message: "Belum ada catatan masuk hari ini. Silakan absen masuk terlebih dahulu." });
-                }
-                if (existing.jamPulang) {
-                  return resolve({ success: false, message: "Anda sudah melakukan absensi pulang hari ini." });
-                }
-                existing.jamPulang = nowTime;
-                existing.statusPulang = payload.data.status || "Hadir";
-                existing.fotoPulangUrl = payload.data.imageBase64;
-                existing.lokasiPulang = `${payload.data.latitude}, ${payload.data.longitude}`;
-                existing.jarakPulang = payload.data.distanceMeter;
-                saveDatabase();
-                return resolve({ success: true, message: `Absensi pulang berhasil pada ${nowTime} WIB.`, data: existing });
-              }
-              return resolve({ success: false, message: "Tipe absensi salah." });
-            }
-
-            case 'registerFace': {
-              const id = payload.employeeId || payload.pegawaiId;
-              let f = db.faceRegistrations.find(item => (item.employeeId || item.pegawaiId) === id);
-              if (!f) {
-                f = { faceId: "FCE_" + Date.now(), employeeId: id, pegawaiId: id, status: "TERDAFTAR", imageUrl: payload.imageData, registeredAt: new Date().toISOString() };
-                db.faceRegistrations.push(f);
-              } else {
-                f.status = "TERDAFTAR";
-                f.imageUrl = payload.imageData;
-                f.registeredAt = new Date().toISOString();
-              }
-              saveDatabase();
-              return resolve({ success: true, message: "Foto referensi wajah berhasil disimpan." });
-            }
-
-            case 'getLeaveRequests': {
-              let list = [...db.leaveRequests];
-              const targetId = payload.filters?.employeeId || payload.filters?.pegawaiId;
-              if (targetId) {
-                list = list.filter(l => (l.employeeId || l.pegawaiId) === targetId);
-              }
-              if (payload.filters?.status && payload.filters.status !== 'SEMUA') {
-                list = list.filter(l => l.status === payload.filters.status);
-              }
-              return resolve({ success: true, data: list });
-            }
-
-            case 'submitLeaveRequest': {
-              const targetId = payload.data.employeeId || payload.data.pegawaiId;
-              const req = {
-                leaveId: "LVE_" + Date.now(),
-                employeeId: targetId,
-                pegawaiId: targetId,
-                nama: currentUser.nama,
-                nip: currentUser.nip,
-                jabatan: currentUser.jabatan,
-                tanggalPengajuan: new Date().toISOString().split('T')[0],
-                jenisIzin: payload.data.jenisIzin,
-                tanggalMulai: payload.data.tanggalMulai,
-                tanggalSelesai: payload.data.tanggalSelesai,
-                periode: `${payload.data.tanggalMulai} s.d. ${payload.data.tanggalSelesai}`,
-                keterangan: payload.data.keterangan,
-                fileBuktiUrl: payload.data.fileBase64 || "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=300&q=80",
-                status: "MENUNGGU",
-                catatanAdmin: "-",
-                diputuskanOleh: "-"
-              };
-              db.leaveRequests.unshift(req);
-
-              db.notifications.unshift({
-                notificationId: "NTF_" + Date.now(),
-                recipientUserId: "USR_ADMIN",
-                judul: "Pengajuan Izin Baru",
-                pesan: `${currentUser.nama} mengajukan ${payload.data.jenisIzin} (${req.periode})`,
-                jenis: "APPROVAL",
-                targetUrl: "approval",
-                statusBaca: false,
-                createdAt: new Date().toISOString()
-              });
-
-              saveDatabase();
-              return resolve({ success: true, message: "Pengajuan izin berhasil dikirim ke Administrator." });
-            }
-
-            case 'decideLeaveRequest': {
-              const target = db.leaveRequests.find(l => l.leaveId === payload.leaveId);
-              if (target) {
-                target.status = payload.status;
-                target.catatanAdmin = payload.catatan || "-";
-                target.diputuskanOleh = currentUser.nama;
-
-                const teacherUser = db.users.find(u => (u.employeeId || u.pegawaiId) === (target.employeeId || target.pegawaiId));
-                if (teacherUser) {
-                  db.notifications.unshift({
-                    notificationId: "NTF_" + Date.now(),
-                    recipientUserId: teacherUser.userId,
-                    judul: `Pengajuan ${target.jenisIzin} ${payload.status === 'DISETUJUI' ? 'Disetujui' : 'Ditolak'}`,
-                    pesan: `Permohonan izin Anda (${target.periode}) telah ${payload.status.toLowerCase()}. Catatan: ${payload.catatan || '-'}`,
-                    jenis: "IZIN",
-                    targetUrl: "riwayat",
-                    statusBaca: false,
-                    createdAt: new Date().toISOString()
-                  });
-                }
-
-                saveDatabase();
-                return resolve({ success: true, message: `Status izin berhasil diperbarui menjadi ${payload.status}.` });
-              }
-              return resolve({ success: false, message: "Pengajuan izin tidak ditemukan." });
-            }
-
-            case 'getAnnouncements': {
-              let list = [...db.announcements];
-              if (!payload.all) {
-                list = list.filter(a => a.status === 'DIPUBLIKASIKAN');
-              }
-              return resolve({ success: true, data: list });
-            }
-
-            case 'createAnnouncement': {
-              const ann = {
-                announcementId: "ANN_" + Date.now(),
-                judul: payload.data.judul,
-                isi: payload.data.isi,
-                kategori: payload.data.kategori || "Informasi",
-                dibuatOleh: currentUser.nama,
-                tanggalPublikasi: payload.data.tanggalPublikasi || new Date().toISOString().split('T')[0],
-                status: payload.data.status || "DIPUBLIKASIKAN"
-              };
-              db.announcements.unshift(ann);
-
-              if (ann.status === "DIPUBLIKASIKAN") {
-                db.users.filter(u => u.role === 'GURU' && u.statusAkun === 'AKTIF').forEach(u => {
-                  db.notifications.unshift({
-                    notificationId: "NTF_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
-                    recipientUserId: u.userId,
-                    judul: "Pengumuman: " + ann.judul,
-                    pesan: ann.isi.substring(0, 90) + (ann.isi.length > 90 ? "..." : ""),
-                    jenis: "PENGUMUMAN",
-                    targetUrl: "pengumuman",
-                    statusBaca: false,
-                    createdAt: new Date().toISOString()
-                  });
-                });
-              }
-
-              saveDatabase();
-              return resolve({ success: true, message: "Pengumuman berhasil disiarkan." });
-            }
-
-            case 'updateAnnouncement': {
-              const ann = db.announcements.find(a => a.announcementId === payload.announcementId);
-              if (ann) {
-                Object.assign(ann, payload.data);
-                saveDatabase();
-                return resolve({ success: true, message: "Pengumuman diperbarui." });
-              }
-              return resolve({ success: false, message: "Pengumuman tidak ditemukan." });
-            }
-
-            case 'deleteAnnouncement': {
-              db.announcements = db.announcements.filter(a => a.announcementId !== payload.announcementId);
-              saveDatabase();
-              return resolve({ success: true, message: "Pengumuman dihapus." });
-            }
-
-            case 'getDutySchedules': {
-              let list = [...db.dutySchedules];
-              if (payload.filters?.hari && payload.filters.hari !== "Semua") {
-                list = list.filter(s => s.hari.toLowerCase() === payload.filters.hari.toLowerCase());
-              }
-              return resolve({ success: true, data: list });
-            }
-
-            case 'createDutySchedule': {
-              const targetId = payload.data.employeeId || payload.data.pegawaiId;
-              const emp = db.employees.find(e => (e.employeeId || e.pegawaiId) === targetId);
-              const sched = {
-                jadwalId: "JDW_" + Date.now(),
-                employeeId: targetId,
-                pegawaiId: targetId,
-                namaPetugas: emp ? emp.nama : "-",
-                nip: emp ? emp.nip : "-",
-                hari: payload.data.hari,
-                tugasPosisi: payload.data.tugasPosisi,
-                lokasi: payload.data.lokasi
-              };
-              db.dutySchedules.push(sched);
-              saveDatabase();
-              return resolve({ success: true, message: "Jadwal piket ditambahkan." });
-            }
-
-            case 'deleteDutySchedule': {
-              db.dutySchedules = db.dutySchedules.filter(s => s.jadwalId !== payload.jadwalId);
-              saveDatabase();
-              return resolve({ success: true, message: "Jadwal piket dihapus." });
-            }
-
-            case 'saveSettings': {
-              Object.assign(db.settings, payload.settings);
-              saveDatabase();
-              applyBrandingSettings();
-              return resolve({ success: true, message: "Pengaturan sistem dan lokasi berhasil disimpan." });
-            }
-
-            case 'saveWorkSchedules': {
-              db.workSchedules = payload.schedules;
-              saveDatabase();
-              return resolve({ success: true, message: "Jadwal kerja mingguan berhasil diperbarui." });
-            }
-
-            case 'addHoliday': {
-              const hld = { holidayId: "HLD_" + Date.now(), tanggal: payload.tanggal, keterangan: payload.keterangan };
-              db.holidays.push(hld);
-              saveDatabase();
-              return resolve({ success: true, message: "Hari libur ditambahkan." });
-            }
-
-            case 'deleteHoliday': {
-              db.holidays = db.holidays.filter(h => h.holidayId !== payload.holidayId);
-              saveDatabase();
-              return resolve({ success: true, message: "Hari libur dihapus." });
-            }
-
-            case 'getNotifications': {
-              const notifs = db.notifications.filter(n => n.recipientUserId === payload.userId);
-              return resolve({ success: true, data: notifs });
-            }
-
-            case 'markNotificationRead': {
-              const n = db.notifications.find(item => item.notificationId === payload.notificationId);
-              if (n) n.statusBaca = true;
-              saveDatabase();
-              updateNotificationUI();
-              return resolve({ success: true });
-            }
-
-            case 'markAllNotificationsRead': {
-              db.notifications.forEach(n => {
-                if (n.recipientUserId === payload.userId) n.statusBaca = true;
-              });
-              saveDatabase();
-              updateNotificationUI();
-              return resolve({ success: true });
-            }
-
-            case 'updateProfile': {
-              const u = db.users.find(item => item.userId === payload.userId);
-              if (u) {
-                u.nama = payload.data.nama;
-                u.email = payload.data.email;
-                const targetId = u.employeeId || u.pegawaiId;
-                const emp = db.employees.find(e => (e.employeeId || e.pegawaiId) === targetId);
-                if (emp) {
-                  emp.nama = payload.data.nama;
-                  emp.email = payload.data.email;
-                  emp.jabatan = payload.data.jabatan;
-                }
-                currentUser.nama = payload.data.nama;
-                currentUser.email = payload.data.email;
-                currentUser.jabatan = payload.data.jabatan;
-                saveDatabase();
-                updateUserHeaderUI();
-                return resolve({ success: true, message: "Profil Anda berhasil diperbarui." });
-              }
-              return resolve({ success: false, message: "User tidak ditemukan." });
-            }
-
-            default:
-              resolve({ success: false, message: "Aksi tidak dikenali: " + action });
-          }
-        }, 80);
+      }).then(res => {
+        if (res.isConfirmed) {
+          setGasUrl(res.value);
+          Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'URL Server berhasil disimpan!', timer: 2000 });
+        }
       });
     }
 
-    // Background Periodic Sync
+    // -------------------------------------------------------------------------
+    // B. UNIVERSAL API DISPATCHER & REAL-TIME SERVER ENGINE
+    // -------------------------------------------------------------------------
+    async function apiCall(action, payload = {}) {
+      // 1. Prioritas Native: Jika berjalan di Google Apps Script Web App (HtmlService)
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve) => {
+          google.script.run
+            .withSuccessHandler((res) => {
+              resolve(res);
+            })
+            .withFailureHandler((err) => {
+              resolve({ success: false, message: "Koneksi Google Apps Script gagal: " + (err.message || err) });
+            })
+            .apiDispatcher(action, payload);
+        });
+      }
+
+      // 2. Jika berjalan eksternal (Blogger / Custom Hosting)
+      if (!GAS_URL) {
+        const promptResult = await Swal.fire({
+          title: 'Hubungkan ke Google Sheets',
+          html: `
+            <div class="text-left text-xs space-y-2">
+              <p class="text-slate-600">Aplikasi sedang berjalan di luar portal Google Apps Script. Harap masukkan <b>Web App URL</b> deployment Google Apps Script Anda (berakhiran <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">/exec</code>) untuk menghubungkan data langsung dengan Google Sheets:</p>
+              <input type="url" id="swal-gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs mt-2 focus:ring-blue-500">
+              <p class="text-[11px] text-slate-400">URL ini disimpan di browser Anda untuk seluruh komunikasi data produksi.</p>
+            </div>
+          `,
+          confirmButtonText: 'Hubungkan Server',
+          confirmButtonColor: '#2563eb',
+          showCancelButton: true,
+          cancelButtonText: 'Batal',
+          preConfirm: () => {
+            const val = document.getElementById('swal-gas-url').value.trim();
+            if (!val || !val.startsWith("http")) {
+              Swal.showValidationMessage("Masukkan URL Web App yang valid!");
+              return false;
+            }
+            return val;
+          }
+        });
+
+        if (promptResult.isConfirmed && promptResult.value) {
+          setGasUrl(promptResult.value);
+        } else {
+          return { success: false, message: "Server Google Apps Script belum terhubung." };
+        }
+      }
+
+      try {
+        const resp = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action, ...payload })
+        });
+        if (!resp.ok) {
+          throw new Error(`HTTP Error ${resp.status}`);
+        }
+        return await resp.json();
+      } catch (err) {
+        return { success: false, message: "Koneksi ke server Google Sheets gagal: " + err.message };
+      }
+    }
+
+    // Background Periodic Real-Time Sync (Google Sheets as Single Source of Truth)
     async function syncRealTimeData() {
       if (!currentUser) return;
-      if (IS_PREVIEW) {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          try {
-            db = JSON.parse(raw);
-            ensureDatabaseIntegrity();
-          } catch(e) {}
-        }
-      } else {
+      try {
         const res = await apiCall('syncData', { userId: currentUser.userId });
         if (res && res.success) {
-          if (res.settings) db.settings = res.settings;
+          if (res.settings) {
+            db.settings = { ...db.settings, ...res.settings };
+            applyBrandingSettings();
+          }
           if (res.weeklySchedule) db.workSchedules = res.weeklySchedule;
           if (res.holidays) db.holidays = res.holidays;
           if (res.notifications) db.notifications = res.notifications;
+          if (res.announcements) db.announcements = res.announcements;
+          if (res.dutySchedules) db.dutySchedules = res.dutySchedules;
+          if (res.employees) db.employees = res.employees;
+          if (res.attendance) db.attendance = res.attendance;
+          if (res.leaveRequests) db.leaveRequests = res.leaveRequests;
+          if (res.faceRegistrations) db.faceRegistrations = res.faceRegistrations;
+
+          // Update currentUser face registration status if updated on server
+          const targetId = currentUser.employeeId || currentUser.pegawaiId;
+          const myFace = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === targetId);
+          if (myFace) {
+            currentUser.statusWajah = myFace.status || "BELUM_TERDAFTAR";
+            if (myFace.imageUrl) currentUser.fotoWajah = myFace.imageUrl;
+          }
+
+          saveDatabase();
+          lastSyncTimestamp = new Date();
+          updateSyncBadge();
+          updateNotificationUI();
         }
+      } catch(e) {
+        console.warn("Background sync error:", e);
       }
-      lastSyncTimestamp = new Date();
-      updateSyncBadge();
-      updateNotificationUI();
     }
 
-    setInterval(syncRealTimeData, 25000); // Sync every 25 seconds
+    setInterval(syncRealTimeData, 25000); // Sinkronisasi otomatis setiap 25 detik
 
     // -------------------------------------------------------------------------
     // C. NAVIGATION MENU CONFIGURATION
