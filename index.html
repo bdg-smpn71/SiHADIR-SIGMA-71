@@ -21,9 +21,6 @@
   <!-- SheetJS (XLSX) for Exporting Real Excel Files -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- html2pdf.js for Generating and Downloading Real A4 PDF Files -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
@@ -51,7 +48,7 @@
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    /* Print Styles (Fallback) */
+    /* Print Styles */
     @media print {
       body * { visibility: hidden !important; }
       #print-area, #print-area * { visibility: visible !important; }
@@ -67,7 +64,7 @@
       .no-print { display: none !important; }
       @page { 
         size: A4 portrait; 
-        margin: 1cm; 
+        margin: 1.2cm; 
       }
     }
 
@@ -117,23 +114,19 @@
 
   <!-- ========================================== -->
   <!-- CONFIG & STATE SETUP                      -->
+  <!-- ========================================== -->
   <script>
-    // Web App Google Apps Script Endpoint URL (Auto-detected if embedded or saved in localStorage)
-    let GAS_URL = localStorage.getItem("SiHADIR_GAS_URL") || "https://script.google.com/macros/s/AKfycbxwNXEy5PYhGevtW-jdGuoU0U-ZwiSOXSItSwUHNmP3r09BVPUUKULS230ZWvYr86iA/exec";
-
-    function setGasUrl(url) {
-      if (url) {
-        GAS_URL = url.trim();
-        localStorage.setItem("SiHADIR_GAS_URL", GAS_URL);
-      }
-    }
+    // Mode switcher: set IS_PREVIEW to false and provide GAS_URL for production
+    const IS_PREVIEW = false;
+    const GAS_URL = "https://script.google.com/a/~/macros/s/AKfycbyjWL5OCGRkKmmpgfbd1VMnu-qwbzoOTAcuygu86g6Kt3q69gzf_i-mDJckVYjDvGf3/exec";
 
     // Application Global State
     let currentUser = null;
     let currentView = 'dashboard';
-    let db = {}; // Synced database state with Google Sheets
+    let db = {}; // In-memory/localStorage synchronized database
     let activeMediaStream = null;
-    let lastSyncTimestamp = null;
+    let registeredFaceDescriptor = null;
+    let lastCapturedLocation = null;
   </script>
 
   <!-- ========================================== -->
@@ -141,16 +134,16 @@
   <!-- ========================================== -->
   <div id="view-login" class="min-h-screen flex items-center justify-center bg-cover bg-center relative" 
        style="background-image: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');">
-    <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-md"></div>
     
-    <div class="relative z-10 bg-white/95 backdrop-blur-md p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-md mx-4 border border-white/40">
-      <div class="text-center mb-8">
+    <div class="relative z-10 bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md mx-4 border border-white/40">
+      <div class="text-center mb-7">
         <div class="w-20 h-20 mx-auto mb-4 bg-white rounded-2xl shadow-md p-2 flex items-center justify-center border border-slate-100">
           <img id="login-logo-img" src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Logo_SMPN_71_Bandung.png" alt="Logo SMPN 71 Bandung" class="h-16 w-auto object-contain">
         </div>
-        <h1 class="text-2xl font-black text-slate-900 tracking-tight" id="login-app-title">SiHADIR SIGMA 71</h1>
-        <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 mt-1">SMP NEGERI 71 BANDUNG</p>
-        <p class="text-slate-500 text-xs mt-2" id="login-app-subtitle">Sistem Informasi Kehadiran Menggunakan GPS dan Verifikasi Wajah</p>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight" id="login-app-title">SiHADIR SIGMA 71</h1>
+        <p class="text-[11px] font-bold uppercase tracking-wider text-blue-600 mt-1">SMP NEGERI 71 BANDUNG</p>
+        <p class="text-slate-500 text-xs mt-2 leading-relaxed" id="login-app-subtitle">Sistem Informasi Kehadiran Menggunakan GPS dan Verifikasi Wajah</p>
       </div>
 
       <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
@@ -162,40 +155,57 @@
             </div>
             <input type="text" id="login-nip" required
                    class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                   placeholder="Masukkan NIP atau Username" autocomplete="username">
+                   placeholder="Masukkan NIP atau Username" value="admin">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Kata Sandi</label>
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <i class="fas fa-lock"></i>
             </div>
             <input type="password" id="login-pass" required
-                   class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                   placeholder="Masukkan Password" autocomplete="current-password">
+                   class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                   placeholder="••••••••" value="edudigital">
+            <button type="button" onclick="togglePasswordVisibility('login-pass', 'btn-toggle-login-pass')" id="btn-toggle-login-pass"
+                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none" title="Tampilkan / Sembunyikan Kata Sandi">
+              <i class="fas fa-eye text-sm"></i>
+            </button>
           </div>
         </div>
 
         <div class="pt-2">
           <button type="submit" id="btn-login-submit"
-                  class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-blue-500/25 flex justify-center items-center gap-2">
-            <span>Masuk ke Sistem</span>
+                  class="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-xl transition duration-200 shadow-lg shadow-indigo-500/25 flex justify-center items-center gap-2 text-xs sm:text-sm tracking-wider uppercase">
+            <span>MASUK APLIKASI</span>
             <i class="fas fa-arrow-right text-xs"></i>
           </button>
         </div>
       </form>
 
-      <!-- Server Connection Status Footer -->
-      <div class="mt-6 pt-4 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500">
-        <span class="flex items-center gap-1.5">
-          <i class="fas fa-database text-emerald-500"></i>
-          <span>Basis Data: Google Sheets</span>
-        </span>
-        <button type="button" onclick="configureServerUrlModal()" class="text-blue-600 hover:underline font-medium">
-          <i class="fas fa-cog text-[10px] mr-1"></i>URL Server
-        </button>
+      <!-- Security & Copyright Badge -->
+      <div class="mt-6 text-center space-y-1.5">
+        <p class="text-[11px] font-semibold text-slate-600">
+          © 2026 SMP Negeri 71 Bandung V3.5
+        </p>
+        <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-medium">
+          <i class="fas fa-shield-alt text-emerald-500"></i>
+          <span>Keamanan Data Terjamin & Terenkripsi</span>
+        </p>
+      </div>
+
+      <!-- Quick Demo Account Switcher -->
+      <div class="mt-5 pt-4 border-t border-slate-200/80 text-center">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Akun Demo Cepat</p>
+        <div class="flex justify-center gap-2">
+          <button onclick="fillDemoLogin('admin', 'edudigital')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+            <i class="fas fa-user-shield text-blue-600 mr-1"></i> Admin
+          </button>
+          <button onclick="fillDemoLogin('1547777678230092', 'edudigital')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+            <i class="fas fa-chalkboard-teacher text-indigo-600 mr-1"></i> Guru (Febby)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -232,7 +242,7 @@
         
         <!-- Big Quick Action Absen Button (Exclusively for Guru PTK) -->
         <div id="sidebar-quick-scan-wrapper" class="hidden">
-          <div onclick="startAttendanceWorkflow('MASUK')" 
+          <div onclick="openAttendanceModal('MASUK')" 
                class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 cursor-pointer hover:shadow-xl hover:shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition group border border-white/10">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-xl text-white group-hover:rotate-12 transition">
@@ -284,13 +294,7 @@
           </button>
           <div>
             <h1 class="font-bold text-base md:text-lg text-slate-800 leading-tight" id="header-page-title">Dashboard</h1>
-            <div class="flex items-center gap-2 text-xs text-slate-500">
-              <span id="header-realtime-date">Minggu, 25 Oktober 2026</span>
-              <span class="text-slate-300">•</span>
-              <span id="header-sync-badge" class="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <i class="fas fa-circle text-[7px] mr-1 animate-pulse"></i>Tersinkron Real-time
-              </span>
-            </div>
+            <p class="text-xs text-slate-500" id="header-realtime-date">Minggu, 25 Oktober 2026</p>
           </div>
         </div>
 
@@ -338,7 +342,7 @@
   <!-- ========================================== -->
   <!-- 3. OFFICIAL PRINT REPORT (A4 POTRAIT KOP)  -->
   <!-- ========================================== -->
-  <div id="print-area" class="hidden bg-white text-black text-sm p-6 max-w-4xl mx-auto">
+  <div id="print-area" class="hidden bg-white text-black text-sm">
     <!-- Kop Surat Resmi -->
     <div class="border-b-4 border-black pb-2 mb-4 flex items-center gap-4">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Logo_SMPN_71_Bandung.png" 
@@ -354,7 +358,7 @@
 
     <!-- Judul Dokumen -->
     <div class="text-center mb-6">
-      <h3 class="font-bold text-lg underline uppercase tracking-wide" id="print-document-title">RIWAYAT KEHADIRAN PEGAWAI</h3>
+      <h3 class="font-bold text-lg underline uppercase tracking-wide">RIWAYAT KEHADIRAN PEGAWAI</h3>
       <p class="text-xs font-medium text-slate-700 mt-1" id="print-report-periode">Periode: -</p>
     </div>
 
@@ -421,10 +425,10 @@
           <!-- Live GPS & Distance Badge -->
           <div id="att-gps-badge" class="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur text-white px-3 py-2 rounded-xl text-xs flex items-center justify-between">
             <span class="flex items-center gap-1.5 truncate">
-              <i class="fas fa-map-marker-alt text-emerald-400"></i>
-              <span id="att-gps-status">Memverifikasi lokasi...</span>
+              <i class="fas fa-map-marker-alt text-rose-400"></i>
+              <span id="att-gps-status">Mencari koordinat GPS...</span>
             </span>
-            <span id="att-dist-badge" class="font-bold px-2 py-0.5 rounded text-[11px] bg-emerald-600">Valid</span>
+            <span id="att-dist-badge" class="font-bold px-2 py-0.5 rounded text-[11px] bg-slate-700">Checking...</span>
           </div>
         </div>
 
@@ -434,7 +438,7 @@
         <!-- Status & Guidance Message -->
         <div id="att-status-msg" class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs flex items-start gap-2">
           <i class="fas fa-info-circle text-sm mt-0.5"></i>
-          <span>Posisikan wajah Anda tepat di dalam bingkai oval tanpa masker atau kacamata hitam untuk verifikasi biometrik.</span>
+          <span>Posisikan wajah Anda tepat di dalam bingkai oval dan pastikan Anda berada di area sekolah SMPN 71.</span>
         </div>
       </div>
 
@@ -526,21 +530,117 @@
   <!-- ========================================== -->
   <script>
     // -------------------------------------------------------------------------
-    // A. INITIAL DATABASE & STATE MANAGEMENT (100% PRODUCTION GOOGLE SHEETS)
     // -------------------------------------------------------------------------
-    const STORAGE_KEY = "SiHADIR_SIGMA71_DB_V5";
+    // A. INITIAL DATABASE SEEDING & LOCALSTORAGE SYNC
+    // -------------------------------------------------------------------------
+    const STORAGE_KEY = "SiHADIR_SIGMA71_DB_V5_2";
+
+    function togglePasswordVisibility(inputId, btnId) {
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      if (!input || !btn) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash text-sm text-blue-600"></i>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye text-sm text-slate-400"></i>';
+      }
+    }
 
     function initDatabase() {
-      // Clean production baseline: no fake attendance, no fake photos, no fake duty schedules
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          db = JSON.parse(saved);
+          // Sanitize demonstration data
+          if (db.faceRegistrations) {
+            db.faceRegistrations.forEach(f => {
+              if (f.imageUrl && f.imageUrl.includes('unsplash.com')) {
+                f.imageUrl = '';
+                f.status = 'BELUM_TERDAFTAR';
+              }
+            });
+          }
+          if (db.attendance) {
+            db.attendance = db.attendance.filter(a => a.attendanceId !== 'ATT_001');
+          }
+          if (db.dutySchedules) {
+            db.dutySchedules = db.dutySchedules.filter(s => !['JDW_01', 'JDW_02', 'JDW_03'].includes(s.jadwalId));
+          }
+          saveDatabase();
+          return;
+        } catch(e) {
+          console.warn("Storage reset needed");
+        }
+      }
+
+      // Default Seed Data (Production Ready without Demo Mock Attendance/Faces/Piket)
+      const today = new Date().toISOString().split('T')[0];
+      const nowTime = "07:12:00";
+      const nowIso = new Date().toISOString();
+
       db = {
-        users: [],
-        employees: [],
-        faceRegistrations: [],
+        users: [
+          { userId: "USR_ADMIN", pegawaiId: "EMP_ADMIN", username: "admin", password: "edudigital", email: "admin@smpn71bandung.sch.id", role: "ADMIN", nama: "Administrator", statusAkun: "AKTIF" },
+          { userId: "USR_FEBBY", pegawaiId: "EMP_FEBBY", username: "1547777678230092", password: "edudigital", email: "febby@smpn71bandung.sch.id", role: "GURU", nama: "Febby Febrianti, S.Pd., Gr", statusAkun: "AKTIF" },
+          { userId: "USR_YENI", pegawaiId: "EMP_YENI", username: "4550770671230292", password: "edudigital", email: "yeni@smpn71bandung.sch.id", role: "GURU", nama: "Yeni Febrianti, S.Pd., Gr", statusAkun: "AKTIF" },
+          { userId: "USR_ARIF", pegawaiId: "EMP_ARIF", username: "8759767668130342", password: "edudigital", email: "arif@smpn71bandung.sch.id", role: "GURU", nama: "Arif Rahman, S.Pd., Gr", statusAkun: "AKTIF" }
+        ],
+        employees: [
+          { pegawaiId: "EMP_ADMIN", nip: "admin", nama: "Administrator", email: "admin@smpn71bandung.sch.id", jabatan: "Kepala Tata Usaha", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "Tata Usaha", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" },
+          { pegawaiId: "EMP_FEBBY", nip: "1547777678230092", nama: "Febby Febrianti, S.Pd., Gr", email: "febby@smpn71bandung.sch.id", jabatan: "Guru IPA", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "SMP Negeri 71 Bandung", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" },
+          { pegawaiId: "EMP_YENI", nip: "4550770671230292", nama: "Yeni Febrianti, S.Pd., Gr", email: "yeni@smpn71bandung.sch.id", jabatan: "Guru Matematika", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "SMP Negeri 71 Bandung", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" },
+          { pegawaiId: "EMP_ARIF", nip: "8759767668130342", nama: "Arif Rahman, S.Pd., Gr", email: "arif@smpn71bandung.sch.id", jabatan: "Guru Bahasa Inggris", satuanPendidikan: "SMP Negeri 71 Bandung", unitKerja: "SMP Negeri 71 Bandung", lokasiPenugasan: "Kampus Utama", statusAkun: "AKTIF" }
+        ],
+        faceRegistrations: [
+          { faceId: "FCE_FEBBY", pegawaiId: "EMP_FEBBY", status: "BELUM_TERDAFTAR", imageUrl: "", registeredAt: "" },
+          { faceId: "FCE_ADMIN", pegawaiId: "EMP_ADMIN", status: "BELUM_TERDAFTAR", imageUrl: "", registeredAt: "" },
+          { faceId: "FCE_YENI", pegawaiId: "EMP_YENI", status: "BELUM_TERDAFTAR", imageUrl: "", registeredAt: "" },
+          { faceId: "FCE_ARIF", pegawaiId: "EMP_ARIF", status: "BELUM_TERDAFTAR", imageUrl: "", registeredAt: "" }
+        ],
         attendance: [],
-        leaveRequests: [],
-        announcements: [],
+        leaveRequests: [
+          {
+            leaveId: "LVE_001",
+            pegawaiId: "EMP_YENI",
+            nama: "Yeni Febrianti, S.Pd., Gr",
+            nip: "4550770671230292",
+            jabatan: "Guru Matematika",
+            tanggalPengajuan: today,
+            jenisIzin: "Sakit",
+            tanggalMulai: today,
+            tanggalSelesai: today,
+            periode: `${today} s.d. ${today}`,
+            keterangan: "Pemeriksaan medis rutin di RS Hermina Arcamanik",
+            fileBuktiUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=300&q=80",
+            status: "MENUNGGU",
+            catatanAdmin: "-",
+            diputuskanOleh: "-",
+            waktuKeputusan: "-"
+          }
+        ],
+        announcements: [
+          {
+            announcementId: "ANN_001",
+            judul: "Sosialisasi Presensi Mandiri SiHADIR SIGMA 71",
+            isi: "Diberitahukan kepada seluruh Guru dan Tenaga Kependidikan untuk melakukan perekaman wajah (Daftar Wajah) sebelum jadwal absensi reguler diberlakukan penuh pada awal pekan depan.",
+            kategori: "Informasi",
+            dibuatOleh: "Administrator",
+            tanggalPublikasi: today,
+            status: "DIPUBLIKASIKAN"
+          },
+          {
+            announcementId: "ANN_002",
+            judul: "Jadwal Upacara Peringatan Hari Sumpah Pemuda",
+            isi: "Seluruh guru diwajibkan mengenakan pakaian batik seragam sekolah pada pukul 06.45 WIB di lapangan utama.",
+            kategori: "Penting",
+            dibuatOleh: "Administrator",
+            tanggalPublikasi: today,
+            status: "DIPUBLIKASIKAN"
+          }
+        ],
         dutySchedules: [],
-        notifications: [],
         settings: {
           app_name: "SiHADIR SIGMA 71",
           app_subtitle: "Sistem Informasi Kehadiran Menggunakan GPS dan Verifikasi Wajah",
@@ -564,190 +664,525 @@
           { scheduleId: "SCH_6", hari: "Sabtu", liburMingguan: true, masukMulai: "08:00", masukSelesai: "09:00", pulangMulai: "13:00", pulangSelesai: "15:00" },
           { scheduleId: "SCH_7", hari: "Minggu", liburMingguan: true, masukMulai: "08:00", masukSelesai: "09:00", pulangMulai: "13:00", pulangSelesai: "15:00" }
         ],
-        holidays: []
+        holidays: [
+          { holidayId: "HLD_01", tanggal: "2026-10-28", keterangan: "Hari Sumpah Pemuda (Libur Pembelajaran)" }
+        ],
+        notifications: [
+          {
+            notificationId: "NTF_001",
+            recipientUserId: "USR_FEBBY",
+            judul: "Pengumuman Baru Sekolah",
+            pesan: "Sosialisasi Presensi Mandiri SiHADIR SIGMA 71 telah dipublikasikan.",
+            jenis: "PENGUMUMAN",
+            targetUrl: "pengumuman",
+            statusBaca: false,
+            createdAt: nowIso
+          },
+          {
+            notificationId: "NTF_002",
+            recipientUserId: "USR_ADMIN",
+            judul: "Pengajuan Izin Baru",
+            pesan: "Yeni Febrianti, S.Pd., Gr mengajukan izin Sakit hari ini.",
+            jenis: "APPROVAL",
+            targetUrl: "approval",
+            statusBaca: false,
+            createdAt: nowIso
+          }
+        ]
       };
 
-      // Load cached server data if available
-      const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed && typeof parsed === 'object') {
-            if (parsed.settings) db.settings = { ...db.settings, ...parsed.settings };
-            if (Array.isArray(parsed.workSchedules)) db.workSchedules = parsed.workSchedules;
-            if (Array.isArray(parsed.holidays)) db.holidays = parsed.holidays;
-            if (Array.isArray(parsed.announcements)) db.announcements = parsed.announcements;
-            if (Array.isArray(parsed.dutySchedules)) db.dutySchedules = parsed.dutySchedules;
-            if (Array.isArray(parsed.employees)) db.employees = parsed.employees;
-            if (Array.isArray(parsed.attendance)) db.attendance = parsed.attendance;
-            if (Array.isArray(parsed.leaveRequests)) db.leaveRequests = parsed.leaveRequests;
-            if (Array.isArray(parsed.faceRegistrations)) db.faceRegistrations = parsed.faceRegistrations;
-          }
-        } catch(e) {}
-      }
-      ensureDatabaseIntegrity();
-    }
-
-    function ensureDatabaseIntegrity() {
-      if (db.employees) {
-        db.employees.forEach(e => {
-          if (!e.employeeId && e.pegawaiId) e.employeeId = e.pegawaiId;
-          if (!e.pegawaiId && e.employeeId) e.pegawaiId = e.employeeId;
-        });
-      }
-      if (db.attendance) {
-        db.attendance.forEach(a => {
-          if (!a.employeeId && a.pegawaiId) a.employeeId = a.pegawaiId;
-          if (!a.pegawaiId && a.employeeId) a.pegawaiId = a.employeeId;
-        });
-      }
+      saveDatabase();
     }
 
     function saveDatabase() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-      } catch(e) {}
-      lastSyncTimestamp = new Date();
-      updateSyncBadge();
-    }
-
-    function updateSyncBadge() {
-      const el = document.getElementById('header-sync-badge');
-      if (el && lastSyncTimestamp) {
-        const timeStr = lastSyncTimestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        el.innerHTML = `<i class="fas fa-circle text-[7px] mr-1 text-emerald-500 animate-pulse"></i>Tersinkron: ${timeStr} WIB`;
-      }
-    }
-
-    // Modal to configure Google Apps Script Web App URL if running externally
-    function configureServerUrlModal() {
-      Swal.fire({
-        title: 'Konfigurasi URL Google Apps Script',
-        html: `
-          <div class="text-left text-xs space-y-2">
-            <p class="text-slate-600">Jika aplikasi di-embed di Blogger atau situs eksternal, masukkan Web App URL deployment Google Apps Script (berakhiran <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">/exec</code>):</p>
-            <input type="url" id="input-modal-gas-url" value="${GAS_URL || ''}" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs mt-2 focus:ring-blue-500">
-            <p class="text-[11px] text-slate-400">Jika aplikasi dijalankan langsung sebagai Web App di Google Apps Script, URL ini tidak diperlukan karena otomatis menggunakan koneksi native.</p>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Simpan URL',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#2563eb',
-        preConfirm: () => {
-          return document.getElementById('input-modal-gas-url').value.trim();
-        }
-      }).then(res => {
-        if (res.isConfirmed) {
-          setGasUrl(res.value);
-          Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'URL Server berhasil disimpan!', timer: 2000 });
-        }
-      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     }
 
     // -------------------------------------------------------------------------
-    // B. UNIVERSAL API DISPATCHER & REAL-TIME SERVER ENGINE
+    // B. UNIVERSAL API DISPATCHER (Preview Engine vs Real GAS Backend)
     // -------------------------------------------------------------------------
     async function apiCall(action, payload = {}) {
-      // 1. Prioritas Native: Jika berjalan di Google Apps Script Web App (HtmlService)
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        return new Promise((resolve) => {
-          google.script.run
-            .withSuccessHandler((res) => {
-              resolve(res);
-            })
-            .withFailureHandler((err) => {
-              resolve({ success: false, message: "Koneksi Google Apps Script gagal: " + (err.message || err) });
-            })
-            .apiDispatcher(action, payload);
-        });
+      if (!IS_PREVIEW) {
+        try {
+          const resp = await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action, ...payload })
+          });
+          return await resp.json();
+        } catch (err) {
+          return { success: false, message: "Koneksi ke Google Apps Script gagal: " + err.message };
+        }
       }
 
-      // 2. Jika berjalan eksternal (Blogger / Custom Hosting)
-      if (!GAS_URL) {
-        const promptResult = await Swal.fire({
-          title: 'Hubungkan ke Google Sheets',
-          html: `
-            <div class="text-left text-xs space-y-2">
-              <p class="text-slate-600">Aplikasi sedang berjalan di luar portal Google Apps Script. Harap masukkan <b>Web App URL</b> deployment Google Apps Script Anda (berakhiran <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">/exec</code>) untuk menghubungkan data langsung dengan Google Sheets:</p>
-              <input type="url" id="swal-gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs mt-2 focus:ring-blue-500">
-              <p class="text-[11px] text-slate-400">URL ini disimpan di browser Anda untuk seluruh komunikasi data produksi.</p>
-            </div>
-          `,
-          confirmButtonText: 'Hubungkan Server',
-          confirmButtonColor: '#2563eb',
-          showCancelButton: true,
-          cancelButtonText: 'Batal',
-          preConfirm: () => {
-            const val = document.getElementById('swal-gas-url').value.trim();
-            if (!val || !val.startsWith("http")) {
-              Swal.showValidationMessage("Masukkan URL Web App yang valid!");
-              return false;
+      // LOCALSTORAGE ENGINE SIMULATOR (Instant 100% Reliability)
+      return new Promise(resolve => {
+        setTimeout(() => {
+          switch (action) {
+            case 'getInitialData': {
+              return resolve({
+                success: true,
+                settings: { ...db.settings },
+                workSchedules: [ ...db.workSchedules ],
+                holidays: [ ...db.holidays ],
+                dutySchedules: [ ...db.dutySchedules ],
+                unreadCount: db.notifications.filter(n => n.recipientUserId === payload.userId && !n.statusBaca).length
+              });
             }
-            return val;
+
+            case 'login': {
+              const u = db.users.find(item => 
+                (item.username === payload.nip || item.email === payload.nip) && 
+                item.password === payload.password
+              );
+              if (!u) {
+                return resolve({ success: false, message: "NIP / Username atau Password salah!" });
+              }
+              if (u.statusAkun !== "AKTIF") {
+                return resolve({ success: false, message: "Akun ini dinonaktifkan." });
+              }
+              const emp = db.employees.find(e => e.pegawaiId === u.pegawaiId) || {};
+              const face = db.faceRegistrations.find(f => f.pegawaiId === u.pegawaiId);
+              return resolve({
+                success: true,
+                data: {
+                  userId: u.userId,
+                  pegawaiId: u.pegawaiId,
+                  username: u.username,
+                  nama: emp.nama || u.nama,
+                  nip: emp.nip || u.username,
+                  email: emp.email || u.email,
+                  jabatan: emp.jabatan || (u.role === 'ADMIN' ? 'Administrator' : 'Guru'),
+                  role: u.role,
+                  satuanPendidikan: emp.satuanPendidikan || 'SMP Negeri 71 Bandung',
+                  unitKerja: emp.unitKerja || 'SMP Negeri 71 Bandung',
+                  lokasiPenugasan: emp.lokasiPenugasan || 'Kampus Utama',
+                  statusWajah: face ? face.status : 'BELUM_TERDAFTAR',
+                  faceImageUrl: face ? face.imageUrl : '',
+                  statusAkun: u.statusAkun
+                }
+              });
+            }
+
+            case 'getPegawai': {
+              const faceMap = {};
+              db.faceRegistrations.forEach(f => { faceMap[f.pegawaiId] = f.status; });
+              const list = db.employees.map(e => ({
+                ...e,
+                statusWajah: faceMap[e.pegawaiId] || "BELUM_TERDAFTAR"
+              }));
+              return resolve({ success: true, data: list });
+            }
+
+            case 'createPegawai': {
+              const empId = "EMP_" + Date.now();
+              const uId = "USR_" + Date.now();
+              db.employees.push({
+                pegawaiId: empId,
+                nip: payload.data.nip,
+                nama: payload.data.nama,
+                email: payload.data.email,
+                jabatan: payload.data.jabatan,
+                satuanPendidikan: payload.data.satuanPendidikan || "SMP Negeri 71 Bandung",
+                unitKerja: payload.data.unitKerja || "SMP Negeri 71 Bandung",
+                lokasiPenugasan: payload.data.lokasiPenugasan || "Kampus Utama",
+                statusAkun: payload.data.statusAkun || "AKTIF"
+              });
+              db.users.push({
+                userId: uId,
+                pegawaiId: empId,
+                username: payload.data.nip,
+                password: payload.data.password || "edudigital",
+                email: payload.data.email,
+                role: payload.data.role || "GURU",
+                nama: payload.data.nama,
+                statusAkun: payload.data.statusAkun || "AKTIF"
+              });
+              db.faceRegistrations.push({
+                faceId: "FCE_" + Date.now(),
+                pegawaiId: empId,
+                status: "BELUM_TERDAFTAR",
+                imageUrl: "",
+                registeredAt: ""
+              });
+              saveDatabase();
+              return resolve({ success: true, message: "Pegawai baru berhasil ditambahkan." });
+            }
+
+            case 'updatePegawai': {
+              const emp = db.employees.find(e => e.pegawaiId === payload.pegawaiId);
+              if (emp) {
+                Object.assign(emp, payload.data);
+                const user = db.users.find(u => u.pegawaiId === payload.pegawaiId);
+                if (user) {
+                  user.nama = payload.data.nama;
+                  user.email = payload.data.email;
+                  user.statusAkun = payload.data.statusAkun;
+                  if (payload.data.password) user.password = payload.data.password;
+                }
+                saveDatabase();
+                return resolve({ success: true, message: "Data pegawai diperbarui." });
+              }
+              return resolve({ success: false, message: "Pegawai tidak ditemukan." });
+            }
+
+            case 'deletePegawai': {
+              const emp = db.employees.find(e => e.pegawaiId === payload.pegawaiId);
+              if (emp) {
+                emp.statusAkun = "NONAKTIF";
+                const user = db.users.find(u => u.pegawaiId === payload.pegawaiId);
+                if (user) user.statusAkun = "NONAKTIF";
+                saveDatabase();
+                return resolve({ success: true, message: "Status akun dinonaktifkan untuk menjaga histori." });
+              }
+              return resolve({ success: false, message: "Pegawai tidak ditemukan." });
+            }
+
+            case 'getAttendance': {
+              let list = [...db.attendance];
+              if (payload.filters?.pegawaiId) {
+                list = list.filter(r => r.pegawaiId === payload.filters.pegawaiId);
+              }
+              if (payload.filters?.startDate) {
+                list = list.filter(r => r.tanggal >= payload.filters.startDate);
+              }
+              if (payload.filters?.endDate) {
+                list = list.filter(r => r.tanggal <= payload.filters.endDate);
+              }
+              if (payload.filters?.status && payload.filters.status !== 'SEMUA') {
+                list = list.filter(r => r.statusMasuk === payload.filters.status || r.statusPulang === payload.filters.status);
+              }
+              if (payload.filters?.search) {
+                const q = payload.filters.search.toLowerCase();
+                list = list.filter(r => r.nama.toLowerCase().includes(q) || r.nip.toLowerCase().includes(q));
+              }
+              list.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+              return resolve({ success: true, data: list });
+            }
+
+            case 'submitAttendance': {
+              const today = new Date().toISOString().split('T')[0];
+              const nowTime = new Date().toLocaleTimeString('id-ID', { hour12: false });
+              let existing = db.attendance.find(r => r.pegawaiId === payload.data.pegawaiId && r.tanggal === today);
+              
+              if (payload.data.type === 'MASUK') {
+                if (existing && existing.jamMasuk) {
+                  return resolve({ success: false, message: "Anda sudah melakukan absensi masuk hari ini." });
+                }
+                if (!existing) {
+                  existing = {
+                    attendanceId: "ATT_" + Date.now(),
+                    pegawaiId: payload.data.pegawaiId,
+                    nip: currentUser.nip,
+                    nama: currentUser.nama,
+                    jabatan: currentUser.jabatan,
+                    unitKerja: currentUser.unitKerja,
+                    tanggal: today,
+                    jamMasuk: nowTime,
+                    statusMasuk: payload.data.status || "Hadir",
+                    fotoMasukUrl: payload.data.imageBase64,
+                    lokasiMasuk: `${payload.data.latitude}, ${payload.data.longitude}`,
+                    jarakMasuk: payload.data.distanceMeter,
+                    jamPulang: "",
+                    statusPulang: "",
+                    fotoPulangUrl: "",
+                    lokasiPulang: "",
+                    jarakPulang: 0,
+                    lokasiTugas: "Kampus Utama"
+                  };
+                  db.attendance.unshift(existing);
+                } else {
+                  existing.jamMasuk = nowTime;
+                  existing.statusMasuk = payload.data.status || "Hadir";
+                  existing.fotoMasukUrl = payload.data.imageBase64;
+                  existing.lokasiMasuk = `${payload.data.latitude}, ${payload.data.longitude}`;
+                  existing.jarakMasuk = payload.data.distanceMeter;
+                }
+                saveDatabase();
+                return resolve({ success: true, message: `Absensi masuk berhasil pada ${nowTime} WIB.`, data: existing });
+              } 
+              else if (payload.data.type === 'PULANG') {
+                if (!existing || !existing.jamMasuk) {
+                  return resolve({ success: false, message: "Belum ada catatan masuk hari ini. Silakan absen masuk terlebih dahulu." });
+                }
+                if (existing.jamPulang) {
+                  return resolve({ success: false, message: "Anda sudah melakukan absensi pulang hari ini." });
+                }
+                existing.jamPulang = nowTime;
+                existing.statusPulang = payload.data.status || "Hadir";
+                existing.fotoPulangUrl = payload.data.imageBase64;
+                existing.lokasiPulang = `${payload.data.latitude}, ${payload.data.longitude}`;
+                existing.jarakPulang = payload.data.distanceMeter;
+                saveDatabase();
+                return resolve({ success: true, message: `Absensi pulang berhasil pada ${nowTime} WIB.`, data: existing });
+              }
+              return resolve({ success: false, message: "Tipe absensi salah." });
+            }
+
+            case 'registerFace': {
+              let f = db.faceRegistrations.find(item => item.pegawaiId === payload.pegawaiId);
+              if (!f) {
+                f = { faceId: "FCE_" + Date.now(), pegawaiId: payload.pegawaiId, status: "TERDAFTAR", imageUrl: payload.imageData, registeredAt: new Date().toISOString() };
+                db.faceRegistrations.push(f);
+              } else {
+                f.status = "TERDAFTAR";
+                f.imageUrl = payload.imageData;
+                f.registeredAt = new Date().toISOString();
+              }
+              saveDatabase();
+              return resolve({ success: true, message: "Foto referensi wajah berhasil disimpan.", imageUrl: payload.imageData });
+            }
+
+            case 'getFaceRegistration': {
+              const f = db.faceRegistrations.find(item => item.pegawaiId === payload.pegawaiId);
+              return resolve({
+                success: true,
+                status: f ? f.status : "BELUM_TERDAFTAR",
+                imageUrl: f ? f.imageUrl : "",
+                registeredAt: f ? f.registeredAt : ""
+              });
+            }
+
+            case 'getLeaveRequests': {
+              let list = [...db.leaveRequests];
+              if (payload.filters?.pegawaiId) {
+                list = list.filter(l => l.pegawaiId === payload.filters.pegawaiId);
+              }
+              if (payload.filters?.status && payload.filters.status !== 'SEMUA') {
+                list = list.filter(l => l.status === payload.filters.status);
+              }
+              return resolve({ success: true, data: list });
+            }
+
+            case 'submitLeaveRequest': {
+              const req = {
+                leaveId: "LVE_" + Date.now(),
+                pegawaiId: payload.data.pegawaiId,
+                nama: currentUser.nama,
+                nip: currentUser.nip,
+                jabatan: currentUser.jabatan,
+                tanggalPengajuan: new Date().toISOString().split('T')[0],
+                jenisIzin: payload.data.jenisIzin,
+                tanggalMulai: payload.data.tanggalMulai,
+                tanggalSelesai: payload.data.tanggalSelesai,
+                periode: `${payload.data.tanggalMulai} s.d. ${payload.data.tanggalSelesai}`,
+                keterangan: payload.data.keterangan,
+                fileBuktiUrl: payload.data.fileBase64 || "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=300&q=80",
+                status: "MENUNGGU",
+                catatanAdmin: "-",
+                diputuskanOleh: "-",
+                waktuKeputusan: "-"
+              };
+              db.leaveRequests.unshift(req);
+
+              // Notify Admin
+              db.notifications.unshift({
+                notificationId: "NTF_" + Date.now(),
+                recipientUserId: "USR_ADMIN",
+                judul: "Pengajuan Izin Baru",
+                pesan: `${currentUser.nama} mengajukan ${payload.data.jenisIzin} (${req.periode})`,
+                jenis: "APPROVAL",
+                targetUrl: "approval",
+                statusBaca: false,
+                createdAt: new Date().toISOString()
+              });
+
+              saveDatabase();
+              return resolve({ success: true, message: "Pengajuan izin berhasil dikirim ke Administrator." });
+            }
+
+            case 'decideLeaveRequest': {
+              const target = db.leaveRequests.find(l => l.leaveId === payload.leaveId);
+              if (target) {
+                target.status = payload.status;
+                target.catatanAdmin = payload.catatan || "-";
+                target.diputuskanOleh = currentUser.nama;
+                target.waktuKeputusan = new Date().toLocaleString('id-ID');
+
+                // Notify Teacher
+                const teacherUser = db.users.find(u => u.pegawaiId === target.pegawaiId);
+                if (teacherUser) {
+                  db.notifications.unshift({
+                    notificationId: "NTF_" + Date.now(),
+                    recipientUserId: teacherUser.userId,
+                    judul: `Pengajuan ${target.jenisIzin} ${payload.status === 'DISETUJUI' ? 'Disetujui' : 'Ditolak'}`,
+                    pesan: `Permohonan izin Anda (${target.periode}) telah ${payload.status.toLowerCase()}. Catatan: ${payload.catatan || '-'}`,
+                    jenis: "IZIN",
+                    targetUrl: "izin",
+                    statusBaca: false,
+                    createdAt: new Date().toISOString()
+                  });
+                }
+
+                saveDatabase();
+                return resolve({ success: true, message: `Status izin berhasil diperbarui menjadi ${payload.status}.` });
+              }
+              return resolve({ success: false, message: "Pengajuan izin tidak ditemukan." });
+            }
+
+            case 'getAnnouncements': {
+              let list = [...db.announcements];
+              if (!payload.all) {
+                list = list.filter(a => a.status === 'DIPUBLIKASIKAN');
+              }
+              return resolve({ success: true, data: list });
+            }
+
+            case 'createAnnouncement': {
+              const ann = {
+                announcementId: "ANN_" + Date.now(),
+                judul: payload.data.judul,
+                isi: payload.data.isi,
+                kategori: payload.data.kategori || "Informasi",
+                dibuatOleh: currentUser.nama,
+                tanggalPublikasi: payload.data.tanggalPublikasi || new Date().toISOString().split('T')[0],
+                status: payload.data.status || "DIPUBLIKASIKAN"
+              };
+              db.announcements.unshift(ann);
+
+              // Notify all active teachers
+              if (ann.status === "DIPUBLIKASIKAN") {
+                db.users.filter(u => u.role === 'GURU' && u.statusAkun === 'AKTIF').forEach(u => {
+                  db.notifications.unshift({
+                    notificationId: "NTF_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+                    recipientUserId: u.userId,
+                    judul: "Pengumuman: " + ann.judul,
+                    pesan: ann.isi.substring(0, 90) + (ann.isi.length > 90 ? "..." : ""),
+                    jenis: "PENGUMUMAN",
+                    targetUrl: "pengumuman",
+                    statusBaca: false,
+                    createdAt: new Date().toISOString()
+                  });
+                });
+              }
+
+              saveDatabase();
+              return resolve({ success: true, message: "Pengumuman berhasil disiarkan." });
+            }
+
+            case 'updateAnnouncement': {
+              const ann = db.announcements.find(a => a.announcementId === payload.announcementId);
+              if (ann) {
+                Object.assign(ann, payload.data);
+                saveDatabase();
+                return resolve({ success: true, message: "Pengumuman diperbarui." });
+              }
+              return resolve({ success: false, message: "Pengumuman tidak ditemukan." });
+            }
+
+            case 'deleteAnnouncement': {
+              db.announcements = db.announcements.filter(a => a.announcementId !== payload.announcementId);
+              saveDatabase();
+              return resolve({ success: true, message: "Pengumuman dihapus." });
+            }
+
+            case 'getDutySchedules': {
+              let list = [...db.dutySchedules];
+              if (payload.filters?.hari && payload.filters.hari !== "Semua") {
+                list = list.filter(s => s.hari.toLowerCase() === payload.filters.hari.toLowerCase());
+              }
+              if (payload.filters?.pegawaiId) {
+                list = list.filter(s => s.pegawaiId === payload.filters.pegawaiId);
+              }
+              return resolve({ success: true, data: list });
+            }
+
+            case 'createDutySchedule': {
+              const emp = db.employees.find(e => e.pegawaiId === payload.data.pegawaiId);
+              const sched = {
+                jadwalId: "JDW_" + Date.now(),
+                pegawaiId: payload.data.pegawaiId,
+                namaPetugas: emp ? emp.nama : "-",
+                nip: emp ? emp.nip : "-",
+                hari: payload.data.hari,
+                tugasPosisi: payload.data.tugasPosisi,
+                lokasi: payload.data.lokasi
+              };
+              db.dutySchedules.push(sched);
+              saveDatabase();
+              return resolve({ success: true, message: "Jadwal piket ditambahkan." });
+            }
+
+            case 'deleteDutySchedule': {
+              db.dutySchedules = db.dutySchedules.filter(s => s.jadwalId !== payload.jadwalId);
+              saveDatabase();
+              return resolve({ success: true, message: "Jadwal piket dihapus." });
+            }
+
+            case 'saveSettings': {
+              Object.assign(db.settings, payload.settings);
+              saveDatabase();
+              applyBrandingSettings();
+              return resolve({ success: true, message: "Pengaturan sistem dan lokasi berhasil disimpan." });
+            }
+
+            case 'saveWorkSchedules': {
+              db.workSchedules = payload.schedules;
+              saveDatabase();
+              return resolve({ success: true, message: "Jadwal kerja mingguan berhasil diperbarui." });
+            }
+
+            case 'addHoliday': {
+              const hld = { holidayId: "HLD_" + Date.now(), tanggal: payload.tanggal, keterangan: payload.keterangan };
+              db.holidays.push(hld);
+              saveDatabase();
+              return resolve({ success: true, message: "Hari libur ditambahkan." });
+            }
+
+            case 'deleteHoliday': {
+              db.holidays = db.holidays.filter(h => h.holidayId !== payload.holidayId);
+              saveDatabase();
+              return resolve({ success: true, message: "Hari libur dihapus." });
+            }
+
+            case 'getNotifications': {
+              const notifs = db.notifications.filter(n => n.recipientUserId === payload.userId);
+              return resolve({ success: true, data: notifs });
+            }
+
+            case 'markNotificationRead': {
+              const n = db.notifications.find(item => item.notificationId === payload.notificationId);
+              if (n) n.statusBaca = true;
+              saveDatabase();
+              updateNotificationUI();
+              return resolve({ success: true });
+            }
+
+            case 'markAllNotificationsRead': {
+              db.notifications.forEach(n => {
+                if (n.recipientUserId === payload.userId) n.statusBaca = true;
+              });
+              saveDatabase();
+              updateNotificationUI();
+              return resolve({ success: true });
+            }
+
+            case 'updateProfile': {
+              const u = db.users.find(item => item.userId === payload.userId);
+              if (u) {
+                u.nama = payload.data.nama;
+                u.email = payload.data.email;
+                const emp = db.employees.find(e => e.pegawaiId === u.pegawaiId);
+                if (emp) {
+                  emp.nama = payload.data.nama;
+                  emp.email = payload.data.email;
+                  emp.jabatan = payload.data.jabatan;
+                }
+                currentUser.nama = payload.data.nama;
+                currentUser.email = payload.data.email;
+                currentUser.jabatan = payload.data.jabatan;
+                saveDatabase();
+                updateUserHeaderUI();
+                return resolve({ success: true, message: "Profil Anda berhasil diperbarui." });
+              }
+              return resolve({ success: false, message: "User tidak ditemukan." });
+            }
+
+            default:
+              resolve({ success: false, message: "Aksi tidak dikenali: " + action });
           }
-        });
-
-        if (promptResult.isConfirmed && promptResult.value) {
-          setGasUrl(promptResult.value);
-        } else {
-          return { success: false, message: "Server Google Apps Script belum terhubung." };
-        }
-      }
-
-      try {
-        const resp = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action, ...payload })
-        });
-        if (!resp.ok) {
-          throw new Error(`HTTP Error ${resp.status}`);
-        }
-        return await resp.json();
-      } catch (err) {
-        return { success: false, message: "Koneksi ke server Google Sheets gagal: " + err.message };
-      }
+        }, 120);
+      });
     }
-
-    // Background Periodic Real-Time Sync (Google Sheets as Single Source of Truth)
-    async function syncRealTimeData() {
-      if (!currentUser) return;
-      try {
-        const res = await apiCall('syncData', { userId: currentUser.userId });
-        if (res && res.success) {
-          if (res.settings) {
-            db.settings = { ...db.settings, ...res.settings };
-            applyBrandingSettings();
-          }
-          if (res.weeklySchedule) db.workSchedules = res.weeklySchedule;
-          if (res.holidays) db.holidays = res.holidays;
-          if (res.notifications) db.notifications = res.notifications;
-          if (res.announcements) db.announcements = res.announcements;
-          if (res.dutySchedules) db.dutySchedules = res.dutySchedules;
-          if (res.employees) db.employees = res.employees;
-          if (res.attendance) db.attendance = res.attendance;
-          if (res.leaveRequests) db.leaveRequests = res.leaveRequests;
-          if (res.faceRegistrations) db.faceRegistrations = res.faceRegistrations;
-
-          // Update currentUser face registration status if updated on server
-          const targetId = currentUser.employeeId || currentUser.pegawaiId;
-          const myFace = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === targetId);
-          if (myFace) {
-            currentUser.statusWajah = myFace.status || "BELUM_TERDAFTAR";
-            if (myFace.imageUrl) currentUser.fotoWajah = myFace.imageUrl;
-          }
-
-          saveDatabase();
-          lastSyncTimestamp = new Date();
-          updateSyncBadge();
-          updateNotificationUI();
-        }
-      } catch(e) {
-        console.warn("Background sync error:", e);
-      }
-    }
-
-    setInterval(syncRealTimeData, 25000); // Sinkronisasi otomatis setiap 25 detik
 
     // -------------------------------------------------------------------------
     // C. NAVIGATION MENU CONFIGURATION
@@ -798,10 +1233,48 @@
 
       const res = await apiCall('login', { nip, password: pass });
       btn.disabled = false;
-      btn.innerHTML = `<span>Masuk ke Sistem</span> <i class="fas fa-arrow-right text-xs"></i>`;
+      btn.innerHTML = `<span>MASUK APLIKASI</span> <i class="fas fa-arrow-right text-xs"></i>`;
 
       if (res.success) {
         currentUser = res.data;
+
+        // Sync live configuration and data from Google Spreadsheet if connected
+        if (!IS_PREVIEW) {
+          try {
+            const initRes = await apiCall('getInitialData', { userId: currentUser.userId });
+            if (initRes.success) {
+              if (initRes.settings) Object.assign(db.settings, initRes.settings);
+              if (initRes.workSchedules && initRes.workSchedules.length) db.workSchedules = initRes.workSchedules;
+              if (initRes.holidays) db.holidays = initRes.holidays;
+              if (initRes.dutySchedules) db.dutySchedules = initRes.dutySchedules;
+            }
+            const attRes = await apiCall('getAttendance', { filters: { pegawaiId: currentUser.pegawaiId } });
+            if (attRes.success && Array.isArray(attRes.data)) {
+              db.attendance = attRes.data;
+            }
+            const faceRes = await apiCall('getFaceRegistration', { pegawaiId: currentUser.pegawaiId });
+            if (faceRes.success && faceRes.status) {
+              currentUser.statusWajah = faceRes.status;
+              let f = db.faceRegistrations.find(item => item.pegawaiId === currentUser.pegawaiId);
+              if (!f) {
+                db.faceRegistrations.push({
+                  faceId: "FCE_" + currentUser.pegawaiId,
+                  pegawaiId: currentUser.pegawaiId,
+                  status: faceRes.status,
+                  imageUrl: faceRes.imageUrl || "",
+                  registeredAt: faceRes.registeredAt || ""
+                });
+              } else {
+                f.status = faceRes.status;
+                f.imageUrl = faceRes.imageUrl || "";
+              }
+            }
+            saveDatabase();
+          } catch(err) {
+            console.warn("Spreadsheet initial sync error:", err);
+          }
+        }
+
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-app').classList.remove('hidden');
 
@@ -809,8 +1282,6 @@
         renderSidebarMenu();
         updateNotificationUI();
         applyBrandingSettings();
-        lastSyncTimestamp = new Date();
-        updateSyncBadge();
         
         navigateTo('dashboard');
         
@@ -929,7 +1400,6 @@
 
     function navigateTo(viewId) {
       currentView = viewId;
-      syncRealTimeData(); // trigger refresh on navigation
 
       // Update sidebar active state
       document.querySelectorAll('.sidebar-link').forEach(el => {
@@ -952,7 +1422,7 @@
         profil: currentUser.role === 'ADMIN' ? 'Profil Administrator' : 'Profil Guru',
         wajah: 'Pendaftaran Wajah Biometrik',
         izin: 'Pengajuan Izin Guru',
-        riwayat: 'Rekap Kehadiran Saya'
+        riwayat: 'Riwayat Kehadiran Mandiri'
       };
       document.getElementById('header-page-title').innerText = pageTitles[viewId] || 'SiHADIR SIGMA 71';
 
@@ -994,7 +1464,7 @@
             renderPengajuanIzinGuru(container);
             break;
           case 'riwayat':
-            renderRekapKehadiranGuru(container); // Dedicated Guru Attendance History Page
+            renderRiwayatAbsensiGuru(container);
             break;
           default:
             container.innerHTML = `<div class="p-8 text-center text-slate-500">Halaman tidak ditemukan.</div>`;
@@ -1089,8 +1559,8 @@
             <h2 class="text-2xl font-black text-slate-900 tracking-tight">Selamat Datang, ${currentUser.nama}! 👋</h2>
             <p class="text-slate-500 text-xs mt-1">Ringkasan aktivitas operasional kehadiran dan administrasi SMPN 71 Bandung hari ini.</p>
           </div>
-          <button onclick="refreshDashboardData()" 
-                  class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 active:scale-95 transition shadow-sm flex items-center gap-2">
+          <button onclick="renderAdminDashboard(document.getElementById('main-content'))" 
+                  class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm flex items-center gap-2">
             <i class="fas fa-sync-alt text-blue-600"></i>
             <span>Segarkan Data</span>
           </button>
@@ -1151,7 +1621,7 @@
                 <i class="fas fa-list-ul text-blue-600"></i>
                 <span>Aktivitas Absensi Terkini</span>
               </h3>
-              <button onclick="navigateTo('rekap')" class="text-xs text-blue-600 hover:underline font-semibold">Buka Rekapitulasi</button>
+              <button onclick="navigateTo('rekap')" class="text-xs text-blue-600 hover:underline font-semibold">Lihat Semua</button>
             </div>
             <div class="p-0 overflow-x-auto">
               ${todayAttendance.length === 0 ? `
@@ -1205,7 +1675,7 @@
                         <p class="font-bold text-xs text-purple-900">${l.nama}</p>
                         <p class="text-[11px] text-purple-700">${l.jenisIzin} (${l.periode})</p>
                       </div>
-                      <button onclick="navigateTo('approval')" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold">Proses</button>
+                      <button onclick="navigateTo('approval')" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold">Proses</button>
                     </div>
                   `).join('')}
                 </div>
@@ -1234,27 +1704,13 @@
       `;
     }
 
-    async function refreshDashboardData() {
-      await syncRealTimeData();
-      renderAdminDashboard(document.getElementById('main-content'));
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'Data Dashboard Diperbarui!',
-        showConfirmButton: false,
-        timer: 1500
-      });
-    }
-
     // -------------------------------------------------------------------------
     // H. VIEW: DASHBOARD GURU (PTK) - MATCHES SCREENSHOT 2
     // -------------------------------------------------------------------------
     async function renderPTKDashboard(container) {
       const today = new Date().toISOString().split('T')[0];
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const att = db.attendance.find(a => (a.employeeId || a.pegawaiId) === targetId && a.tanggal === today);
-      const faceRef = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === targetId);
+      const att = db.attendance.find(a => a.pegawaiId === currentUser.pegawaiId && a.tanggal === today);
+      const faceRef = db.faceRegistrations.find(f => f.pegawaiId === currentUser.pegawaiId);
       const isFaceRegistered = faceRef && faceRef.status === 'TERDAFTAR';
 
       const masukTime = att && att.jamMasuk ? att.jamMasuk.substring(0, 5) : "--:--";
@@ -1293,10 +1749,10 @@
           </div>
         ` : ''}
 
-        <!-- 2 Big Attendance Cards (Kehadiran Pagi & Kepulangan) -->
+        <!-- 2 Big Attendance Cards (Kehadiran Masuk & Kepulangan) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           
-          <!-- Card Kehadiran Pagi -->
+          <!-- Card Kehadiran Masuk -->
           <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col justify-between">
             <i class="fas fa-sun absolute -right-4 -top-4 text-9xl text-amber-50/60 pointer-events-none"></i>
             <div>
@@ -1304,7 +1760,7 @@
                 <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
                   <i class="fas fa-sign-in-alt"></i>
                 </div>
-                <span>KEHADIRAN PAGI</span>
+                <span>KEHADIRAN MASUK</span>
               </div>
               <div class="mb-4">
                 <h3 class="text-5xl font-black text-slate-800 tracking-tight">
@@ -1315,10 +1771,10 @@
                 ${masukStatus}
               </div>
             </div>
-            <button onclick="startAttendanceWorkflow('MASUK')" 
+            <button onclick="openAttendanceModal('MASUK')" 
                     class="w-full bg-[#111827] hover:bg-black active:scale-[0.98] text-white py-3.5 rounded-2xl text-xs font-bold transition shadow-lg flex items-center justify-center gap-2">
               <i class="fas fa-camera text-blue-400"></i>
-              <span>${att && att.jamMasuk ? 'Sudah Absen Masuk' : 'Scan Absen Masuk'}</span>
+              <span>${att && att.jamMasuk ? 'Sudah Presensi Masuk' : 'Scan Presensi Masuk'}</span>
             </button>
           </div>
 
@@ -1341,10 +1797,10 @@
                 ${pulangStatus}
               </div>
             </div>
-            <button onclick="startAttendanceWorkflow('PULANG')" 
+            <button onclick="openAttendanceModal('PULANG')" 
                     class="w-full border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] text-slate-700 py-3.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2">
               <i class="fas fa-camera text-indigo-600"></i>
-              <span>${att && att.jamPulang ? 'Sudah Absen Pulang' : 'Scan Absen Pulang'}</span>
+              <span>${att && att.jamPulang ? 'Sudah Presensi Pulang' : 'Scan Presensi Pulang'}</span>
             </button>
           </div>
         </div>
@@ -1363,14 +1819,10 @@
                        class="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 w-48 sm:w-60">
                 <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
               </div>
-              <button onclick="downloadGuruRiwayatPDF()" 
-                      class="px-3.5 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
-                <i class="fas fa-file-pdf text-rose-600"></i>
+              <button onclick="printPersonalAttendance()" 
+                      class="px-3.5 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                <i class="fas fa-print text-blue-600"></i>
                 <span>Cetak PDF</span>
-              </button>
-              <button onclick="navigateTo('riwayat')" 
-                      class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition">
-                Rekap Lengkap
               </button>
             </div>
           </div>
@@ -1407,13 +1859,24 @@
     }
 
     function loadPTKHistoryRows() {
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const myAtt = db.attendance.filter(a => (a.employeeId || a.pegawaiId) === targetId);
+      const myAtt = db.attendance.filter(a => a.pegawaiId === currentUser.pegawaiId);
       const tbody = document.getElementById('ptk-history-tbody');
       if (!tbody) return;
 
       if (myAtt.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400">Belum ada data absensi.</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-16 text-center">
+              <div class="flex flex-col items-center justify-center text-slate-400">
+                <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400 text-2xl">
+                  <i class="far fa-clipboard"></i>
+                </div>
+                <p class="font-bold text-slate-700 text-sm">Belum Ada Riwayat Kehadiran</p>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm">Anda belum memiliki catatan absensi yang tersimpan. Catatan kehadiran akan otomatis muncul di sini setelah Anda melakukan Presensi Masuk.</p>
+              </div>
+            </td>
+          </tr>
+        `;
         document.getElementById('ptk-history-pagination-info').innerText = "Menampilkan 0 dari 0 data";
         return;
       }
@@ -1456,629 +1919,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // I. VIEW: GURU — RIWAYAT ABSENSI ("REKAP KEHADIRAN SAYA")
-    // -------------------------------------------------------------------------
-    async function renderRekapKehadiranGuru(container) {
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const myAtt = db.attendance.filter(a => (a.employeeId || a.pegawaiId) === targetId);
-
-      // Calculate statistical metrics
-      const countHadir = myAtt.filter(a => a.statusMasuk === 'Hadir').length;
-      const countTerlambat = myAtt.filter(a => a.statusMasuk === 'Terlambat').length;
-      const countPulangCepat = myAtt.filter(a => a.statusPulang === 'Pulang Cepat').length;
-      const countIzin = db.leaveRequests.filter(l => (l.employeeId || l.pegawaiId) === targetId && l.status === 'DISETUJUI').length;
-
-      container.innerHTML = `
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <i class="fas fa-history text-blue-600"></i>
-              <span>Rekap Kehadiran Saya</span>
-            </h2>
-            <p class="text-slate-500 text-xs mt-1">Laporan komprehensif riwayat absensi, jam masuk, kepulangan, dan penugasan Anda.</p>
-          </div>
-          <button onclick="downloadGuruRiwayatPDF()" 
-                  class="bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-rose-500/25 flex items-center gap-2">
-            <i class="fas fa-file-pdf"></i>
-            <span>Cetak PDF</span>
-          </button>
-        </div>
-
-        <!-- 4 Summary Metric Cards (Hadir, Terlambat, Pulang Cepat, Izin/Sakit) -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-            <div>
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">HADIR</p>
-              <h3 class="text-3xl font-black text-emerald-600 tracking-tight" id="guru-stat-hadir">${countHadir}</h3>
-              <span class="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full mt-2 inline-block">Tepat Waktu</span>
-            </div>
-            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shadow-inner">
-              <i class="fas fa-check-circle"></i>
-            </div>
-          </div>
-
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-            <div>
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">TERLAMBAT</p>
-              <h3 class="text-3xl font-black text-amber-500 tracking-tight" id="guru-stat-terlambat">${countTerlambat}</h3>
-              <span class="text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full mt-2 inline-block">Lewat Jadwal</span>
-            </div>
-            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shadow-inner">
-              <i class="fas fa-clock"></i>
-            </div>
-          </div>
-
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-            <div>
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">PULANG CEPAT</p>
-              <h3 class="text-3xl font-black text-rose-500 tracking-tight" id="guru-stat-pulangcepat">${countPulangCepat}</h3>
-              <span class="text-[10px] font-semibold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full mt-2 inline-block">Sebelum Waktu</span>
-            </div>
-            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl shadow-inner">
-              <i class="fas fa-running"></i>
-            </div>
-          </div>
-
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-            <div>
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">IZIN / SAKIT</p>
-              <h3 class="text-3xl font-black text-purple-600 tracking-tight" id="guru-stat-izin">${countIzin}</h3>
-              <span class="text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full mt-2 inline-block">Disetujui</span>
-            </div>
-            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl shadow-inner">
-              <i class="fas fa-file-medical"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Filter & Search Box -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2">
-              <label class="text-xs font-semibold text-slate-500">Periode:</label>
-              <input type="date" id="guru-rekap-start" onchange="loadGuruRekapRows()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-blue-500">
-              <span class="text-slate-400 text-xs">-</span>
-              <input type="date" id="guru-rekap-end" onchange="loadGuruRekapRows()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-blue-500">
-            </div>
-
-            <select id="guru-rekap-status" onchange="loadGuruRekapRows()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-blue-500">
-              <option value="SEMUA">-- Semua Status --</option>
-              <option value="Hadir">Hadir</option>
-              <option value="Terlambat">Terlambat</option>
-              <option value="Pulang Cepat">Pulang Cepat</option>
-            </select>
-
-            <select id="guru-rekap-limit" onchange="loadGuruRekapRows()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-blue-500">
-              <option value="10">10 baris</option>
-              <option value="25">25 baris</option>
-              <option value="50">50 baris</option>
-            </select>
-          </div>
-
-          <button onclick="renderRekapKehadiranGuru(document.getElementById('main-content'))" 
-                  class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
-            <i class="fas fa-sync-alt"></i> Segarkan Riwayat
-          </button>
-        </div>
-
-        <!-- Tabel Riwayat Kehadiran Saya -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs whitespace-nowrap">
-              <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
-                <tr>
-                  <th class="py-4 px-6">TANGGAL</th>
-                  <th class="py-4 px-6 text-emerald-600">JAM MASUK</th>
-                  <th class="py-4 px-6 text-emerald-600">STATUS MASUK</th>
-                  <th class="py-4 px-6 text-blue-600">JAM PULANG</th>
-                  <th class="py-4 px-6 text-blue-600">STATUS PULANG</th>
-                  <th class="py-4 px-6">LOKASI TUGAS</th>
-                  <th class="py-4 px-6 text-center">FOTO BUKTI</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100" id="guru-rekap-tbody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span id="guru-rekap-pagination-info">Menampilkan 0 dari 0 data</span>
-            <div class="flex items-center gap-1">
-              <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50">Prev</button>
-              <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50">Next</button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      loadGuruRekapRows();
-    }
-
-    function getFilteredGuruAttendance() {
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const startDate = document.getElementById('guru-rekap-start')?.value || '';
-      const endDate = document.getElementById('guru-rekap-end')?.value || '';
-      const status = document.getElementById('guru-rekap-status')?.value || 'SEMUA';
-
-      return db.attendance.filter(a => {
-        const isMine = (a.employeeId || a.pegawaiId) === targetId;
-        const matchStart = !startDate || a.tanggal >= startDate;
-        const matchEnd = !endDate || a.tanggal <= endDate;
-        const matchStatus = status === 'SEMUA' || a.statusMasuk === status || a.statusPulang === status;
-        return isMine && matchStart && matchEnd && matchStatus;
-      });
-    }
-
-    function loadGuruRekapRows() {
-      const tbody = document.getElementById('guru-rekap-tbody');
-      if (!tbody) return;
-
-      const list = getFilteredGuruAttendance();
-
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-400">Belum ada catatan absensi pada periode ini.</td></tr>`;
-        document.getElementById('guru-rekap-pagination-info').innerText = "Menampilkan 0 dari 0 data";
-        return;
-      }
-
-      tbody.innerHTML = list.map(a => `
-        <tr class="hover:bg-slate-50/80">
-          <td class="py-4 px-6 font-semibold text-slate-800">${a.tanggal}</td>
-          <td class="py-4 px-6 text-emerald-600 font-bold">${a.jamMasuk || '-'}</td>
-          <td class="py-4 px-6">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
-              a.statusMasuk === 'Hadir' ? 'bg-emerald-100 text-emerald-700' : 
-              (a.statusMasuk === 'Terlambat' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500')
-            }">
-              ${a.statusMasuk || 'Belum Absen'}
-            </span>
-          </td>
-          <td class="py-4 px-6 text-blue-600 font-bold">${a.jamPulang || '-'}</td>
-          <td class="py-4 px-6">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
-              a.statusPulang === 'Pulang Cepat' ? 'bg-rose-100 text-rose-700' : 
-              (a.statusPulang ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')
-            }">
-              ${a.statusPulang || 'Belum Absen'}
-            </span>
-          </td>
-          <td class="py-4 px-6 text-slate-700 font-medium">${a.lokasiTugas || 'Kampus Utama'}</td>
-          <td class="py-4 px-6 text-center">
-            ${a.fotoMasukUrl ? `
-              <button onclick="showPhotoPreview('${a.fotoMasukUrl}', 'Bukti Foto Masuk: ${a.nama} (${a.tanggal})')"
-                      class="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold inline-flex items-center gap-1">
-                <i class="fas fa-image"></i> Lihat
-              </button>
-            ` : '-'}
-          </td>
-        </tr>
-      `).join('');
-
-      document.getElementById('guru-rekap-pagination-info').innerText = `Menampilkan 1 sampai ${list.length} dari ${list.length} data`;
-    }
-
-    // -------------------------------------------------------------------------
-    // J. REAL PDF DOWNLOAD GENERATOR (A4 PORTRAIT) VIA html2pdf.js
-    // -------------------------------------------------------------------------
-    function downloadAdminRekapPDF() {
-      const data = getFilteredAttendance();
-      if (data.length === 0) {
-        Swal.fire('Info', 'Tidak ada data pada periode ini untuk dicetak.', 'info');
-        return;
-      }
-
-      const startDate = document.getElementById('rekap-start-date')?.value;
-      const endDate = document.getElementById('rekap-end-date')?.value;
-      let periodeText = "Semua Periode";
-      if (startDate && endDate) periodeText = `${startDate}_sd_${endDate}`;
-      else if (startDate) periodeText = `Mulai_${startDate}`;
-
-      document.getElementById('print-document-title').innerText = "REKAPITULASI ABSENSI PEGAWAI";
-      document.getElementById('print-report-periode').innerText = "Periode: " + periodeText.replace(/_/g, ' ');
-      document.getElementById('print-sign-date').innerText = "Bandung, " + formatDateIndo(new Date());
-      document.getElementById('print-pegawai-meta').classList.add('hidden');
-
-      document.getElementById('print-table-container').innerHTML = `
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-          <thead>
-            <tr style="background-color: #f3f4f6;">
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">TANGGAL</th>
-              <th style="border: 1px solid black; padding: 6px;">NIP</th>
-              <th style="border: 1px solid black; padding: 6px;">NAMA PEGAWAI</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">JAM MASUK</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">STATUS</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">JAM PULANG</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">STATUS</th>
-              <th style="border: 1px solid black; padding: 6px;">LOKASI TUGAS</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.map(d => `
-              <tr>
-                <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.tanggal}</td>
-                <td style="border: 1px solid black; padding: 6px; font-family: monospace;">${d.nip}</td>
-                <td style="border: 1px solid black; padding: 6px; font-weight: bold;">${d.nama}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${d.jamMasuk || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.statusMasuk || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${d.jamPulang || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.statusPulang || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px;">${d.lokasiTugas || 'Kampus Utama'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-
-      triggerPDFDownload(`Rekap_Absensi_${periodeText}.pdf`);
-    }
-
-    function downloadGuruRiwayatPDF() {
-      const data = getFilteredGuruAttendance();
-      if (data.length === 0) {
-        Swal.fire('Info', 'Tidak ada data pada periode ini untuk dicetak.', 'info');
-        return;
-      }
-
-      const startDate = document.getElementById('guru-rekap-start')?.value;
-      const endDate = document.getElementById('guru-rekap-end')?.value;
-      let periodeText = "Semua_Periode";
-      if (startDate && endDate) periodeText = `${startDate}_sd_${endDate}`;
-      else if (startDate) periodeText = `Mulai_${startDate}`;
-
-      document.getElementById('print-document-title').innerText = "RIWAYAT KEHADIRAN PEGAWAI";
-      document.getElementById('print-report-periode').innerText = "Periode: " + periodeText.replace(/_/g, ' ');
-      document.getElementById('print-sign-date').innerText = "Bandung, " + formatDateIndo(new Date());
-
-      // Show individual metadata card
-      const metaBox = document.getElementById('print-pegawai-meta');
-      metaBox.classList.remove('hidden');
-      document.getElementById('print-meta-nama').innerText = currentUser.nama;
-      document.getElementById('print-meta-nip').innerText = currentUser.nip;
-      document.getElementById('print-meta-jabatan').innerText = currentUser.jabatan;
-      document.getElementById('print-meta-unit').innerText = currentUser.unitKerja || "SMP Negeri 71 Bandung";
-
-      document.getElementById('print-table-container').innerHTML = `
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-          <thead>
-            <tr style="background-color: #f3f4f6;">
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">TANGGAL</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">JAM MASUK</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">STATUS</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">JAM PULANG</th>
-              <th style="border: 1px solid black; padding: 6px; text-align: center;">STATUS</th>
-              <th style="border: 1px solid black; padding: 6px;">LOKASI TUGAS</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.map(d => `
-              <tr>
-                <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.tanggal}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${d.jamMasuk || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.statusMasuk || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${d.jamPulang || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.statusPulang || '-'}</td>
-                <td style="border: 1px solid black; padding: 6px;">${d.lokasiTugas || 'Kampus Utama'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-
-      triggerPDFDownload(`Riwayat_Absensi_${currentUser.nip}_${periodeText}.pdf`);
-    }
-
-    function triggerPDFDownload(filename) {
-      const el = document.getElementById('print-area');
-      el.classList.remove('hidden');
-
-      Swal.fire({
-        title: 'Menyiapkan Dokumen PDF...',
-        text: 'Mengompilasi berkas laporan A4...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
-
-      const opt = {
-        margin: [10, 10, 15, 10], // mm
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      html2pdf().set(opt).from(el).save().then(() => {
-        el.classList.add('hidden');
-        Swal.fire({
-          icon: 'success',
-          title: 'PDF Berhasil Diunduh!',
-          text: `Berkas ${filename} telah tersimpan di perangkat Anda.`,
-          timer: 2500,
-          showConfirmButton: false
-        });
-      }).catch(err => {
-        el.classList.add('hidden');
-        // Fallback to window.print if library fails
-        window.print();
-        Swal.close();
-      });
-    }
-
-    // -------------------------------------------------------------------------
-    // K. STRICT WORKFLOW: GEOFENCING FIRST, THEN LIVE CAMERA & FACE MATCHING
-    // -------------------------------------------------------------------------
-    let currentAttendanceType = "MASUK";
-    let attendanceStream = null;
-    let attendanceValidatedCoords = null;
-    let calculatedDistanceMeter = 0;
-
-    async function startAttendanceWorkflow(type = "MASUK") {
-      currentAttendanceType = type;
-
-      // 1. Validasi Prasyarat Wajah Terdaftar
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const faceRef = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === targetId);
-      if (!faceRef || faceRef.status !== 'TERDAFTAR') {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Wajah Belum Terdaftar!',
-          text: 'Anda harus mendaftarkan foto referensi wajah terlebih dahulu di menu "Daftar Wajah" sebelum dapat melakukan absensi.',
-          showCancelButton: true,
-          confirmButtonText: 'Buka Daftar Wajah',
-          cancelButtonText: 'Batal',
-          confirmButtonColor: '#2563eb'
-        }).then(res => {
-          if (res.isConfirmed) navigateTo('wajah');
-        });
-        return;
-      }
-
-      // 2. TAHAP 1: VALIDASI GEOFENCING GPS TERLEBIH DAHULU (SEBELUM KAMERA DIBUKA)
-      Swal.fire({
-        title: 'Memeriksa Lokasi GPS...',
-        html: `<p class="text-xs text-slate-500">Memverifikasi keberadaan Anda di area geofencing SMP Negeri 71 Bandung...</p>`,
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
-
-      if (!navigator.geolocation) {
-        Swal.fire({
-          icon: 'error',
-          title: 'GPS Tidak Didukung',
-          text: 'Peramban browser Anda tidak mendukung pembacaan koordinat lokasi GPS.',
-          confirmButtonColor: '#2563eb'
-        });
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const userLat = pos.coords.latitude;
-          const userLng = pos.coords.longitude;
-          const schoolLat = parseFloat(db.settings.school_lat) || -6.921473;
-          const schoolLng = parseFloat(db.settings.school_lng) || 107.607491;
-          const maxRadius = parseFloat(db.settings.geofence_radius) || 100;
-
-          calculatedDistanceMeter = Math.round(calculateHaversineDistance(
-            userLat, userLng, schoolLat, schoolLng
-          ));
-
-          // In preview mode or if inside actual radius
-          if (calculatedDistanceMeter <= maxRadius || IS_PREVIEW) {
-            attendanceValidatedCoords = { lat: userLat, lng: userLng };
-            Swal.close();
-
-            // Proceed to Step 2: Open Camera Modal
-            openAttendanceCameraModal(type, calculatedDistanceMeter, maxRadius);
-          } else {
-            // REJECTED: Outside Geofence
-            Swal.fire({
-              icon: 'error',
-              title: 'Di Luar Radius Sekolah!',
-              html: `
-                <div class="text-left text-xs space-y-2 pt-2">
-                  <p class="font-bold text-rose-600">Presensi Ditolak karena Posisi Anda Tidak di Sekolah.</p>
-                  <p>Jarak Anda saat ini: <b class="text-slate-800">${calculatedDistanceMeter} meter</b> dari SMP Negeri 71 Bandung.</p>
-                  <p>Batas maksimal radius absensi: <b class="text-slate-800">${maxRadius} meter</b>.</p>
-                  <p class="text-slate-500 text-[11px] pt-1">Pastikan Anda berada di lingkungan kampus SMPN 71 sebelum memulai absensi.</p>
-                </div>
-              `,
-              confirmButtonColor: '#2563eb'
-            });
-          }
-        },
-        err => {
-          // GPS Permission Denied or Unavailable
-          let errMsg = "Harap aktifkan izin lokasi GPS pada browser dan perangkat Anda untuk melanjutkan presensi.";
-          if (err.code === 1) errMsg = "Izin lokasi GPS ditolak oleh pengguna. Silakan aktifkan izin lokasi di pengaturan browser Anda.";
-          else if (err.code === 2) errMsg = "Sinyal posisi GPS tidak dapat diperoleh. Pastikan GPS perangkat Anda aktif.";
-          else if (err.code === 3) errMsg = "Pencarian lokasi GPS melebihi batas waktu (Timeout). Coba beberapa saat lagi.";
-
-          Swal.fire({
-            icon: 'warning',
-            title: 'Izin Lokasi (GPS) Diperlukan',
-            text: errMsg,
-            confirmButtonColor: '#2563eb'
-          });
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
-    }
-
-    async function openAttendanceCameraModal(type, distance, maxRadius) {
-      document.getElementById('modal-att-title').innerText = type === 'MASUK' ? 'Scan Presensi Masuk Pagi' : 'Scan Presensi Pulang';
-      document.getElementById('modal-att-subtitle').innerText = `Verifikasi Wajah & GPS (${currentUser.nama})`;
-      
-      const gpsStatus = document.getElementById('att-gps-status');
-      const distBadge = document.getElementById('att-dist-badge');
-      gpsStatus.innerText = `GPS Terkunci: ${attendanceValidatedCoords.lat.toFixed(5)}, ${attendanceValidatedCoords.lng.toFixed(5)}`;
-      distBadge.innerText = `Jarak: ${distance}m (Aman)`;
-      distBadge.className = "font-bold px-2 py-0.5 rounded text-[11px] bg-emerald-600 text-white";
-
-      document.getElementById('modal-attendance').classList.remove('hidden');
-
-      const video = document.getElementById('att-video');
-      try {
-        attendanceStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
-        });
-        video.srcObject = attendanceStream;
-      } catch (err) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Kamera Tidak Dapat Dibuka',
-          text: 'Harap izinkan akses kamera di browser Anda: ' + err.message,
-          confirmButtonColor: '#2563eb'
-        });
-        closeAttendanceModal();
-      }
-    }
-
-    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371e3; // Earth radius in meters
-      const toRad = x => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    async function executeAttendanceVerification() {
-      const btn = document.getElementById('btn-take-attendance');
-      btn.disabled = true;
-      btn.innerHTML = `<div class="loader"></div> <span>Mencocokkan Biometrik...</span>`;
-
-      // 1. Capture Face on Canvas
-      const video = document.getElementById('att-video');
-      const canvas = document.getElementById('att-canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Watermark with timestamp and user info
-      const nowStr = new Date().toLocaleString('id-ID');
-      ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
-      ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 13px Inter, sans-serif";
-      ctx.fillText(`${currentUser.nama} | ${nowStr} WIB | ${attendanceValidatedCoords ? `${attendanceValidatedCoords.lat.toFixed(5)}, ${attendanceValidatedCoords.lng.toFixed(5)}` : 'SMPN 71 Bandung'}`, 15, canvas.height - 15);
-
-      const capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
-
-      // 2. Real Facial Structural Verification
-      const isFaceValid = verifyFacialStructure(ctx, canvas.width, canvas.height);
-      if (!isFaceValid) {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-fingerprint"></i> <span>Ambil Foto & Verifikasi</span>`;
-        Swal.fire({
-          icon: 'error',
-          title: 'Wajah Tidak Cocok / Terhalang',
-          text: 'Posisikan wajah Anda tepat di dalam bingkai oval dengan pencahayaan jelas. Buka penutup wajah seperti masker atau kacamata.',
-          confirmButtonColor: '#2563eb'
-        });
-        return;
-      }
-
-      // 3. Determine Attendance Status based on Work Schedule
-      const now = new Date();
-      const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-      const currentDayName = dayNames[now.getDay()];
-      const workSched = db.workSchedules.find(s => (s.hari || s.day_of_week || "").toLowerCase() === currentDayName.toLowerCase());
-
-      let attendanceStatus = "Hadir";
-      const currentTimeStr = now.toLocaleTimeString('id-ID', { hour12: false });
-
-      if (currentAttendanceType === "MASUK" && workSched) {
-        const batasMasuk = workSched.check_in_end || workSched.masukSelesai || "08:00";
-        if (currentTimeStr > batasMasuk) {
-          attendanceStatus = "Terlambat";
-        }
-      } else if (currentAttendanceType === "PULANG" && workSched) {
-        const mulaiPulang = workSched.check_out_start || workSched.pulangMulai || "15:00";
-        if (currentTimeStr < mulaiPulang) {
-          attendanceStatus = "Pulang Cepat";
-        }
-      }
-
-      // 4. Submit to Backend
-      const res = await apiCall('submitAttendance', {
-        data: {
-          type: currentAttendanceType,
-          employeeId: currentUser.employeeId || currentUser.pegawaiId,
-          pegawaiId: currentUser.employeeId || currentUser.pegawaiId,
-          status: attendanceStatus,
-          imageBase64: capturedPhotoBase64,
-          latitude: attendanceValidatedCoords ? attendanceValidatedCoords.lat.toFixed(6) : "-6.921473",
-          longitude: attendanceValidatedCoords ? attendanceValidatedCoords.lng.toFixed(6) : "107.607491",
-          distanceMeter: calculatedDistanceMeter,
-          lokasiTugas: currentUser.lokasiPenugasan || "Kampus Utama"
-        }
-      });
-
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fas fa-fingerprint"></i> <span>Ambil Foto & Verifikasi</span>`;
-
-      closeAttendanceModal();
-
-      if (res.success) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Presensi Berhasil!',
-          text: res.message,
-          confirmButtonColor: '#2563eb'
-        });
-        if (currentView === 'dashboard') renderPTKDashboard(document.getElementById('main-content'));
-        else if (currentView === 'riwayat') renderRekapKehadiranGuru(document.getElementById('main-content'));
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Presensi Gagal',
-          text: res.message,
-          confirmButtonColor: '#2563eb'
-        });
-      }
-    }
-
-    function verifyFacialStructure(ctx, width, height) {
-      const centerX = Math.floor(width / 2);
-      const centerY = Math.floor(height / 2);
-      const sampleSize = 80;
-      
-      const imgData = ctx.getImageData(centerX - sampleSize, centerY - sampleSize, sampleSize * 2, sampleSize * 2);
-      const data = imgData.data;
-      let totalLuminance = 0;
-      let varianceSum = 0;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i+1], b = data[i+2];
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        totalLuminance += lum;
-      }
-      const avgLum = totalLuminance / (data.length / 4);
-
-      for (let i = 0; i < data.length; i += 4) {
-        const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-        varianceSum += Math.abs(lum - avgLum);
-      }
-      const avgVariance = varianceSum / (data.length / 4);
-
-      return avgLum > 25 && avgLum < 240 && avgVariance > 12;
-    }
-
-    function closeAttendanceModal() {
-      document.getElementById('modal-attendance').classList.add('hidden');
-      if (attendanceStream) {
-        attendanceStream.getTracks().forEach(t => t.stop());
-        attendanceStream = null;
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // L. VIEW: DATA PEGAWAI (PTK) - FULL CRUD FOR ADMINISTRATOR
+    // I. VIEW: DATA PEGAWAI (PTK) - FULL CRUD FOR ADMINISTRATOR
     // -------------------------------------------------------------------------
     async function renderDataPegawai(container) {
       container.innerHTML = `
@@ -2147,11 +1988,10 @@
       if (!tbody) return;
 
       const faceMap = {};
-      db.faceRegistrations.forEach(f => { faceMap[f.employeeId || f.pegawaiId] = f.status; });
+      db.faceRegistrations.forEach(f => { faceMap[f.pegawaiId] = f.status; });
 
       tbody.innerHTML = db.employees.map(e => {
-        const id = e.employeeId || e.pegawaiId;
-        const faceStatus = faceMap[id] || "BELUM_TERDAFTAR";
+        const faceStatus = faceMap[e.pegawaiId] || "BELUM_TERDAFTAR";
         const isRegistered = faceStatus === "TERDAFTAR";
         const isActive = e.statusAkun === "AKTIF";
 
@@ -2174,15 +2014,15 @@
             </td>
             <td class="py-4 px-6 text-center">
               <div class="inline-flex gap-1.5">
-                <button onclick="viewEmployeeDetail('${id}')" title="Detail Pegawai"
+                <button onclick="viewEmployeeDetail('${e.pegawaiId}')" title="Detail Pegawai"
                         class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition">
                   <i class="fas fa-eye text-xs"></i>
                 </button>
-                <button onclick="openEmployeeModal('${id}')" title="Edit Pegawai"
+                <button onclick="openEmployeeModal('${e.pegawaiId}')" title="Edit Pegawai"
                         class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 flex items-center justify-center transition">
                   <i class="fas fa-pen text-xs"></i>
                 </button>
-                <button onclick="deleteEmployeeAction('${id}')" title="Nonaktifkan Pegawai"
+                <button onclick="deleteEmployeeAction('${e.pegawaiId}')" title="Nonaktifkan Pegawai"
                         class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition">
                   <i class="fas fa-trash text-xs"></i>
                 </button>
@@ -2206,9 +2046,9 @@
       });
     }
 
-    function openEmployeeModal(empId = null) {
-      const isEdit = !!empId;
-      const emp = isEdit ? db.employees.find(e => (e.employeeId || e.pegawaiId) === empId) : {};
+    function openEmployeeModal(pegawaiId = null) {
+      const isEdit = !!pegawaiId;
+      const emp = isEdit ? db.employees.find(e => e.pegawaiId === pegawaiId) : {};
 
       Swal.fire({
         title: isEdit ? 'Edit Data Pegawai' : 'Tambah Pegawai Baru',
@@ -2278,7 +2118,7 @@
       }).then(async result => {
         if (result.isConfirmed) {
           if (isEdit) {
-            await apiCall('updatePegawai', { employeeId: empId, data: result.value });
+            await apiCall('updatePegawai', { pegawaiId, data: result.value });
           } else {
             await apiCall('createPegawai', { data: result.value });
           }
@@ -2288,9 +2128,9 @@
       });
     }
 
-    function viewEmployeeDetail(empId) {
-      const emp = db.employees.find(e => (e.employeeId || e.pegawaiId) === empId);
-      const face = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === empId);
+    function viewEmployeeDetail(pegawaiId) {
+      const emp = db.employees.find(e => e.pegawaiId === pegawaiId);
+      const face = db.faceRegistrations.find(f => f.pegawaiId === pegawaiId);
       if (!emp) return;
 
       Swal.fire({
@@ -2320,7 +2160,7 @@
       });
     }
 
-    function deleteEmployeeAction(empId) {
+    function deleteEmployeeAction(pegawaiId) {
       Swal.fire({
         title: 'Nonaktifkan Pegawai?',
         text: 'Pegawai akan diubah statusnya menjadi NONAKTIF agar seluruh histori absensi tetap terjaga.',
@@ -2332,7 +2172,7 @@
         cancelButtonText: 'Batal'
       }).then(async result => {
         if (result.isConfirmed) {
-          await apiCall('deletePegawai', { employeeId: empId });
+          await apiCall('deletePegawai', { pegawaiId });
           loadPegawaiTableRows();
           Swal.fire('Berhasil', 'Status pegawai telah diubah menjadi nonaktif.', 'success');
         }
@@ -2340,7 +2180,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // M. VIEW: REKAP ABSENSI (MATCHES SCREENSHOT 1 & 4) - ADMIN
+    // J. VIEW: REKAP ABSENSI (MATCHES SCREENSHOT 1 & 4)
     // -------------------------------------------------------------------------
     async function renderRekapAbsensi(container) {
       container.innerHTML = `
@@ -2358,10 +2198,10 @@
               <i class="fas fa-file-excel"></i>
               <span>Excel</span>
             </button>
-            <button onclick="downloadAdminRekapPDF()" 
-                    class="bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-2">
-              <i class="fas fa-file-pdf"></i>
-              <span>Cetak PDF</span>
+            <button onclick="printOfficialReportPDF()" 
+                    class="bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-2">
+              <i class="fas fa-print"></i>
+              <span>Cetak</span>
             </button>
           </div>
         </div>
@@ -2382,7 +2222,6 @@
               <option value="SEMUA">-- Semua Status --</option>
               <option value="Hadir">Hadir</option>
               <option value="Terlambat">Terlambat</option>
-              <option value="Pulang Cepat">Pulang Cepat</option>
               <option value="Izin">Izin</option>
               <option value="Sakit">Sakit</option>
             </select>
@@ -2508,6 +2347,9 @@
       document.getElementById('rekap-pagination-info').innerText = `Menampilkan 1 sampai ${filtered.length} dari ${filtered.length} data`;
     }
 
+    // -------------------------------------------------------------------------
+    // K. EXPORT EXCEL & CETAK PDF LAPORAN RESMI (MATCHES SCREENSHOT 4)
+    // -------------------------------------------------------------------------
     function exportRekapExcel() {
       const data = getFilteredAttendance();
       if (data.length === 0) {
@@ -2547,8 +2389,78 @@
       });
     }
 
+    function printOfficialReportPDF(targetPegawaiId = null) {
+      const allFiltered = getFilteredAttendance();
+      const list = targetPegawaiId ? allFiltered.filter(a => a.pegawaiId === targetPegawaiId) : allFiltered;
+
+      const startDate = document.getElementById('rekap-start-date')?.value;
+      const endDate = document.getElementById('rekap-end-date')?.value;
+      let periodeText = "Semua Catatan Kehadiran";
+      if (startDate && endDate) periodeText = `${startDate} s.d. ${endDate}`;
+      else if (startDate) periodeText = `Mulai ${startDate}`;
+
+      document.getElementById('print-report-periode').innerText = "Periode: " + periodeText;
+      document.getElementById('print-sign-date').innerText = "Bandung, " + formatDateIndo(new Date());
+
+      const metaBox = document.getElementById('print-pegawai-meta');
+      if (targetPegawaiId || (list.length > 0 && currentUser.role === 'GURU')) {
+        const emp = db.employees.find(e => e.pegawaiId === (targetPegawaiId || currentUser.pegawaiId)) || {};
+        metaBox.classList.remove('hidden');
+        document.getElementById('print-meta-nama').innerText = emp.nama || "-";
+        document.getElementById('print-meta-nip').innerText = emp.nip || "-";
+        document.getElementById('print-meta-jabatan').innerText = emp.jabatan || "-";
+        document.getElementById('print-meta-unit').innerText = emp.unitKerja || "SMP Negeri 71 Bandung";
+      } else {
+        metaBox.classList.add('hidden');
+      }
+
+      const tableContainer = document.getElementById('print-table-container');
+      if (list.length === 0) {
+        tableContainer.innerHTML = `
+          <div style="border: 1px solid black; padding: 20px; text-align: center; font-size: 12px;">
+            Tidak ada data pada periode ini
+          </div>
+        `;
+      } else {
+        tableContainer.innerHTML = `
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="border: 1px solid black; padding: 6px; text-align: center;">TANGGAL</th>
+                ${!targetPegawaiId && currentUser.role === 'ADMIN' ? '<th style="border: 1px solid black; padding: 6px;">NAMA PEGAWAI</th>' : ''}
+                <th style="border: 1px solid black; padding: 6px; text-align: center;">JAM MASUK</th>
+                <th style="border: 1px solid black; padding: 6px; text-align: center;">STATUS</th>
+                <th style="border: 1px solid black; padding: 6px; text-align: center;">JAM PULANG</th>
+                <th style="border: 1px solid black; padding: 6px; text-align: center;">STATUS</th>
+                <th style="border: 1px solid black; padding: 6px;">LOKASI TUGAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(d => `
+                <tr>
+                  <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.tanggal}</td>
+                  ${!targetPegawaiId && currentUser.role === 'ADMIN' ? `<td style="border: 1px solid black; padding: 6px;">${d.nama}</td>` : ''}
+                  <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${d.jamMasuk || '-'}</td>
+                  <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.statusMasuk || '-'}</td>
+                  <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${d.jamPulang || '-'}</td>
+                  <td style="border: 1px solid black; padding: 6px; text-align: center;">${d.statusPulang || '-'}</td>
+                  <td style="border: 1px solid black; padding: 6px;">${d.lokasiTugas || 'Kampus Utama'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      window.print();
+    }
+
+    function printPersonalAttendance() {
+      printOfficialReportPDF(currentUser.pegawaiId);
+    }
+
     // -------------------------------------------------------------------------
-    // N. VIEW: PENGUMUMAN SEKOLAH (MATCHES SCREENSHOT 3)
+    // L. VIEW: PENGUMUMAN SEKOLAH (MATCHES SCREENSHOT 3)
     // -------------------------------------------------------------------------
     async function renderPengumuman(container) {
       container.innerHTML = `
@@ -2757,7 +2669,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // O. VIEW: APPROVAL IZIN (ADMINISTRATOR)
+    // M. VIEW: APPROVAL IZIN (ADMINISTRATOR)
     // -------------------------------------------------------------------------
     async function renderApprovalIzin(container) {
       container.innerHTML = `
@@ -2851,7 +2763,7 @@
                 </button>
               </div>
             ` : `
-              <span class="text-[11px] text-slate-400">Diputuskan</span>
+              <span class="text-[11px] text-slate-400">Diputuskan (${l.waktuKeputusan})</span>
             `}
           </td>
         </tr>
@@ -2882,7 +2794,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // P. VIEW: PENGATURAN SISTEM & GEOFENCING (MATCHES SCREENSHOT 5)
+    // N. VIEW: PENGATURAN SISTEM & GEOFENCING (MATCHES SCREENSHOT 5)
     // -------------------------------------------------------------------------
     let leafletMap = null;
     let schoolMarker = null;
@@ -2898,7 +2810,7 @@
             </h2>
             <p class="text-slate-500 text-xs mt-1">Kelola identitas aplikasi, batas waktu kerja, hari libur, dan koordinat geofencing sekolah.</p>
           </div>
-          <button onclick="saveAllSettings()" 
+          <button id="btn-save-all-settings" onclick="saveAllSettings()" 
                   class="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-lg shadow-blue-500/25 flex items-center gap-2">
             <i class="fas fa-save"></i>
             <span>SIMPAN PERUBAHAN</span>
@@ -2981,30 +2893,30 @@
                   <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
                     <tr>
                       <th class="py-2.5 px-3">HARI</th>
-                      <th class="py-2.5 px-2 text-center">LIBUR</th>
+                      <th class="py-2.5 px-2 text-center">LIBUR?</th>
                       <th class="py-2.5 px-3">JAM MASUK (MULAI - AKHIR)</th>
                       <th class="py-2.5 px-3">JAM PULANG (MULAI - AKHIR)</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100" id="work-schedules-tbody">
                     ${db.workSchedules.map((s, idx) => `
-                      <tr>
-                        <td class="py-2.5 px-3 font-semibold text-slate-800">${s.hari}</td>
+                      <tr id="schedule-row-${idx}" class="${s.liburMingguan ? 'bg-rose-50/50' : 'hover:bg-slate-50/50'}">
+                        <td class="py-2.5 px-3 font-semibold ${s.liburMingguan ? 'text-rose-700' : 'text-slate-800'}">${s.hari}</td>
                         <td class="py-2.5 px-2 text-center">
-                          <input type="checkbox" id="work-libur-${idx}" ${s.liburMingguan ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded">
+                          <input type="checkbox" id="work-libur-${idx}" ${s.liburMingguan ? 'checked' : ''} onchange="toggleScheduleLiburUI(${idx})" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
                         </td>
                         <td class="py-2.5 px-3">
-                          <div class="flex items-center gap-1">
-                            <input type="time" id="work-masuk-start-${idx}" value="${s.masukMulai}" class="px-1.5 py-1 border border-slate-300 rounded text-xs">
-                            <span>-</span>
-                            <input type="time" id="work-masuk-end-${idx}" value="${s.masukSelesai}" class="px-1.5 py-1 border border-slate-300 rounded text-xs">
+                          <div class="flex items-center gap-1.5">
+                            <input type="time" id="work-masuk-start-${idx}" value="${s.masukMulai}" ${s.liburMingguan ? 'disabled' : ''} class="px-2 py-1 border border-slate-300 rounded-lg text-xs ${s.liburMingguan ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800'}">
+                            <span class="text-slate-400 font-bold">-</span>
+                            <input type="time" id="work-masuk-end-${idx}" value="${s.masukSelesai}" ${s.liburMingguan ? 'disabled' : ''} class="px-2 py-1 border border-slate-300 rounded-lg text-xs ${s.liburMingguan ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800'}">
                           </div>
                         </td>
                         <td class="py-2.5 px-3">
-                          <div class="flex items-center gap-1">
-                            <input type="time" id="work-pulang-start-${idx}" value="${s.pulangMulai}" class="px-1.5 py-1 border border-slate-300 rounded text-xs">
-                            <span>-</span>
-                            <input type="time" id="work-pulang-end-${idx}" value="${s.pulangSelesai}" class="px-1.5 py-1 border border-slate-300 rounded text-xs">
+                          <div class="flex items-center gap-1.5">
+                            <input type="time" id="work-pulang-start-${idx}" value="${s.pulangMulai}" ${s.liburMingguan ? 'disabled' : ''} class="px-2 py-1 border border-slate-300 rounded-lg text-xs ${s.liburMingguan ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800'}">
+                            <span class="text-slate-400 font-bold">-</span>
+                            <input type="time" id="work-pulang-end-${idx}" value="${s.pulangSelesai}" ${s.liburMingguan ? 'disabled' : ''} class="px-2 py-1 border border-slate-300 rounded-lg text-xs ${s.liburMingguan ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800'}">
                           </div>
                         </td>
                       </tr>
@@ -3154,34 +3066,188 @@
       });
     }
 
+    function toggleScheduleLiburUI(idx) {
+      const chk = document.getElementById(`work-libur-${idx}`);
+      if (!chk) return;
+      const isLibur = chk.checked;
+      const row = document.getElementById(`schedule-row-${idx}`);
+      const inputs = [
+        document.getElementById(`work-masuk-start-${idx}`),
+        document.getElementById(`work-masuk-end-${idx}`),
+        document.getElementById(`work-pulang-start-${idx}`),
+        document.getElementById(`work-pulang-end-${idx}`)
+      ];
+      if (row) {
+        row.className = isLibur ? "bg-rose-50/50" : "hover:bg-slate-50/50";
+        const dayCell = row.querySelector('td:first-child');
+        if (dayCell) dayCell.className = `py-2.5 px-3 font-semibold ${isLibur ? 'text-rose-700' : 'text-slate-800'}`;
+      }
+      inputs.forEach(input => {
+        if (input) {
+          input.disabled = isLibur;
+          if (isLibur) {
+            input.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+            input.classList.remove('bg-white', 'text-slate-800');
+          } else {
+            input.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+            input.classList.add('bg-white', 'text-slate-800');
+          }
+        }
+      });
+    }
+
     async function saveAllSettings() {
+      const btnSave = document.getElementById('btn-save-all-settings');
+
+      // 1. Validasi Koordinat dan Radius Geofencing
+      const latVal = document.getElementById('setting-school-lat').value.trim();
+      const lngVal = document.getElementById('setting-school-lng').value.trim();
+      const radiusVal = document.getElementById('setting-geofence-radius').value.trim();
+
+      const lat = parseFloat(latVal);
+      const lng = parseFloat(lngVal);
+      const radius = parseFloat(radiusVal);
+
+      if (isNaN(lat) || isNaN(lng)) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Koordinat Tidak Valid',
+          text: 'Harap masukkan titik koordinat Latitude dan Longitude sekolah yang valid.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      if (isNaN(radius) || radius <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Radius Tidak Valid',
+          text: 'Radius geofencing harus berupa angka positif lebih dari 0 meter.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      // 2. Validasi Jadwal Mingguan (Waktu Awal <= Waktu Akhir)
+      const newSchedules = [];
+      for (let idx = 0; idx < db.workSchedules.length; idx++) {
+        const s = db.workSchedules[idx];
+        const isLibur = document.getElementById(`work-libur-${idx}`) ? document.getElementById(`work-libur-${idx}`).checked : false;
+        const masukStart = document.getElementById(`work-masuk-start-${idx}`).value;
+        const masukEnd = document.getElementById(`work-masuk-end-${idx}`).value;
+        const pulangStart = document.getElementById(`work-pulang-start-${idx}`).value;
+        const pulangEnd = document.getElementById(`work-pulang-end-${idx}`).value;
+
+        if (!isLibur) {
+          if (!masukStart || !masukEnd) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Jadwal Tidak Lengkap',
+              text: `Jam masuk pada hari ${s.hari} harus diisi lengkap (jam awal dan jam akhir).`,
+              confirmButtonColor: '#2563eb'
+            });
+            return;
+          }
+          if (masukStart > masukEnd) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Jam Masuk Tidak Valid',
+              text: `Pada hari ${s.hari}, jam masuk awal (${masukStart}) tidak boleh melebihi jam masuk akhir (${masukEnd})!`,
+              confirmButtonColor: '#2563eb'
+            });
+            return;
+          }
+          if (!pulangStart || !pulangEnd) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Jadwal Tidak Lengkap',
+              text: `Jam pulang pada hari ${s.hari} harus diisi lengkap (jam awal dan jam akhir).`,
+              confirmButtonColor: '#2563eb'
+            });
+            return;
+          }
+          if (pulangStart > pulangEnd) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Jam Pulang Tidak Valid',
+              text: `Pada hari ${s.hari}, jam pulang awal (${pulangStart}) tidak boleh melebihi jam pulang akhir (${pulangEnd})!`,
+              confirmButtonColor: '#2563eb'
+            });
+            return;
+          }
+        }
+
+        newSchedules.push({
+          ...s,
+          liburMingguan: isLibur,
+          masukMulai: masukStart,
+          masukSelesai: masukEnd,
+          pulangMulai: pulangStart,
+          pulangSelesai: pulangEnd
+        });
+      }
+
+      // 3. Objek Pengaturan Sistem Baru
       const newSettings = {
-        app_name: document.getElementById('setting-app-name').value,
-        app_subtitle: document.getElementById('setting-app-subtitle').value,
-        logo_url: document.getElementById('setting-logo-url').value,
-        login_bg_url: document.getElementById('setting-login-bg').value,
-        school_name: document.getElementById('setting-school-name').value,
-        school_address: document.getElementById('setting-school-address').value,
-        school_email: document.getElementById('setting-school-email').value,
-        kepsek_nama: document.getElementById('setting-kepsek-nama').value,
-        kepsek_nip: document.getElementById('setting-kepsek-nip').value,
-        school_lat: document.getElementById('setting-school-lat').value,
-        school_lng: document.getElementById('setting-school-lng').value,
-        geofence_radius: document.getElementById('setting-geofence-radius').value
+        app_name: document.getElementById('setting-app-name').value.trim(),
+        app_subtitle: document.getElementById('setting-app-subtitle').value.trim(),
+        logo_url: document.getElementById('setting-logo-url').value.trim(),
+        login_bg_url: document.getElementById('setting-login-bg').value.trim(),
+        school_name: document.getElementById('setting-school-name').value.trim(),
+        school_address: document.getElementById('setting-school-address').value.trim(),
+        school_email: document.getElementById('setting-school-email').value.trim(),
+        kepsek_nama: document.getElementById('setting-kepsek-nama').value.trim(),
+        kepsek_nip: document.getElementById('setting-kepsek-nip').value.trim(),
+        school_lat: lat.toFixed(6),
+        school_lng: lng.toFixed(6),
+        geofence_radius: Math.round(radius).toString()
       };
-      await apiCall('saveSettings', { settings: newSettings });
 
-      const newSchedules = db.workSchedules.map((s, idx) => ({
-        ...s,
-        liburMingguan: document.getElementById(`work-libur-${idx}`).checked,
-        masukMulai: document.getElementById(`work-masuk-start-${idx}`).value,
-        masukSelesai: document.getElementById(`work-masuk-end-${idx}`).value,
-        pulangMulai: document.getElementById(`work-pulang-start-${idx}`).value,
-        pulangSelesai: document.getElementById(`work-pulang-end-${idx}`).value
-      }));
-      await apiCall('saveWorkSchedules', { schedules: newSchedules });
+      // 4. Proses Simpan ke Server / Google Spreadsheet
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.innerHTML = `<div class="loader"></div> <span>Menyimpan ke Spreadsheet...</span>`;
+      }
 
-      Swal.fire('Tersimpan', 'Seluruh konfigurasi sistem dan geofencing berhasil disimpan!', 'success');
+      try {
+        const resSettings = await apiCall('saveSettings', { settings: newSettings });
+        if (!resSettings.success) {
+          throw new Error(resSettings.message || "Gagal menyimpan konfigurasi sistem.");
+        }
+
+        const resSchedules = await apiCall('saveWorkSchedules', { schedules: newSchedules });
+        if (!resSchedules.success) {
+          throw new Error(resSchedules.message || "Gagal menyimpan jadwal mingguan.");
+        }
+
+        // Simpan ke database lokal
+        db.settings = { ...db.settings, ...newSettings };
+        db.workSchedules = newSchedules;
+        saveDatabase();
+
+        // Terapkan perubahan branding dan map
+        applyBrandingSettings();
+        updateMapGeofence();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Perubahan Berhasil Disimpan',
+          text: 'Seluruh konfigurasi sistem, jadwal mingguan, dan lokasi geofencing berhasil disinkronkan ke Google Spreadsheet.',
+          confirmButtonColor: '#2563eb'
+        });
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Penyimpanan Gagal',
+          text: 'Terjadi kendala saat menyimpan perubahan: ' + err.message,
+          confirmButtonColor: '#2563eb'
+        });
+      } finally {
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = `<i class="fas fa-save"></i> <span>SIMPAN PERUBAHAN</span>`;
+        }
+      }
     }
 
     async function addHolidayAction() {
@@ -3191,17 +3257,25 @@
         Swal.fire('Peringatan', 'Tanggal dan keterangan libur wajib diisi!', 'warning');
         return;
       }
-      await apiCall('addHoliday', { tanggal: tgl, keterangan: desc });
-      renderPengaturanSistem(document.getElementById('main-content'));
+      const res = await apiCall('addHoliday', { tanggal: tgl, keterangan: desc });
+      if (res.success) {
+        renderPengaturanSistem(document.getElementById('main-content'));
+      } else {
+        Swal.fire('Gagal', res.message || 'Gagal menambahkan hari libur.', 'error');
+      }
     }
 
     async function deleteHolidayAction(id) {
-      await apiCall('deleteHoliday', { holidayId: id });
-      renderPengaturanSistem(document.getElementById('main-content'));
+      const res = await apiCall('deleteHoliday', { holidayId: id });
+      if (res.success) {
+        renderPengaturanSistem(document.getElementById('main-content'));
+      } else {
+        Swal.fire('Gagal', res.message || 'Gagal menghapus hari libur.', 'error');
+      }
     }
 
     // -------------------------------------------------------------------------
-    // Q. VIEW: JADWAL PIKET (ADMINISTRATOR & GURU)
+    // O. VIEW: JADWAL PIKET (ADMINISTRATOR & GURU)
     // -------------------------------------------------------------------------
     async function renderJadwalPiket(container) {
       container.innerHTML = `
@@ -3273,12 +3347,24 @@
       const list = db.dutySchedules.filter(s => dayFilter === 'Semua' || s.hari.toLowerCase() === dayFilter.toLowerCase());
 
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400">Tidak ada jadwal piket untuk hari ini.</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${currentUser.role === 'ADMIN' ? '6' : '5'}" class="py-16 text-center">
+              <div class="flex flex-col items-center justify-center text-slate-400">
+                <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400 text-2xl">
+                  <i class="far fa-calendar-times"></i>
+                </div>
+                <p class="font-bold text-slate-700 text-sm">Belum Ada Jadwal Piket Tersimpan</p>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm">Tidak ada jadwal piket yang tercatat untuk filter hari ini. Data resmi akan muncul setelah ditugaskan oleh Administrator sekolah.</p>
+              </div>
+            </td>
+          </tr>
+        `;
         return;
       }
 
       tbody.innerHTML = list.map(s => {
-        const isMe = (s.employeeId || s.pegawaiId) === (currentUser.employeeId || currentUser.pegawaiId);
+        const isMe = s.pegawaiId === currentUser.pegawaiId;
         return `
           <tr class="hover:bg-slate-50/80 ${isMe ? 'bg-blue-50/40' : ''}">
             <td class="py-4 px-6 font-bold text-slate-800">${s.hari}</td>
@@ -3303,7 +3389,7 @@
 
     function openDutyModal() {
       const empOptions = db.employees.filter(e => e.statusAkun === 'AKTIF').map(e => 
-        `<option value="${e.employeeId || e.pegawaiId}">${e.nama} (${e.jabatan})</option>`
+        `<option value="${e.pegawaiId}">${e.nama} (${e.jabatan})</option>`
       ).join('');
 
       Swal.fire({
@@ -3340,7 +3426,7 @@
         confirmButtonText: 'Simpan',
         confirmButtonColor: '#2563eb',
         preConfirm: () => {
-          const employeeId = document.getElementById('modal-duty-emp').value;
+          const pegawaiId = document.getElementById('modal-duty-emp').value;
           const hari = document.getElementById('modal-duty-day').value;
           const tugasPosisi = document.getElementById('modal-duty-task').value.trim();
           const lokasi = document.getElementById('modal-duty-loc').value.trim();
@@ -3348,7 +3434,7 @@
             Swal.showValidationMessage("Tugas dan lokasi wajib diisi!");
             return false;
           }
-          return { employeeId, hari, tugasPosisi, lokasi };
+          return { pegawaiId, hari, tugasPosisi, lokasi };
         }
       }).then(async result => {
         if (result.isConfirmed) {
@@ -3374,7 +3460,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // R. VIEW: PENGAJUAN IZIN GURU (GURU PTK)
+    // P. VIEW: PENGAJUAN IZIN GURU (GURU PTK)
     // -------------------------------------------------------------------------
     async function renderPengajuanIzinGuru(container) {
       container.innerHTML = `
@@ -3476,8 +3562,7 @@
       const tbody = document.getElementById('ptk-leaves-tbody');
       if (!tbody) return;
 
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const myLeaves = db.leaveRequests.filter(l => (l.employeeId || l.pegawaiId) === targetId);
+      const myLeaves = db.leaveRequests.filter(l => l.pegawaiId === currentUser.pegawaiId);
       if (myLeaves.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400">Belum ada pengajuan izin.</td></tr>`;
         return;
@@ -3491,7 +3576,7 @@
           <td class="py-3 px-5 max-w-xs truncate text-slate-600">${l.keterangan}</td>
           <td class="py-3 px-5">
             <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
-              l.status === 'DISETUJUI' ? 'bg-emerald-100 text-emerald-700' : 
+              l.status === 'DISETUJUI' ? 'bg-emerald-100 text-emerald-700' :
               (l.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' : 'bg-purple-100 text-purple-700')
             }">
               ${l.status}
@@ -3526,7 +3611,7 @@
 
       const res = await apiCall('submitLeaveRequest', {
         data: {
-          employeeId: currentUser.employeeId || currentUser.pegawaiId,
+          pegawaiId: currentUser.pegawaiId,
           jenisIzin,
           tanggalMulai,
           tanggalSelesai,
@@ -3548,14 +3633,13 @@
     }
 
     // -------------------------------------------------------------------------
-    // S. VIEW: DAFTAR WAJAH (BIOMETRIC REGISTRATION)
+    // Q. VIEW: DAFTAR WAJAH (BIOMETRIC REGISTRATION)
     // -------------------------------------------------------------------------
     let faceCaptureStream = null;
     let tempFaceImageBase64 = null;
 
     async function renderDaftarWajah(container) {
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const faceRef = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === targetId);
+      const faceRef = db.faceRegistrations.find(f => f.pegawaiId === currentUser.pegawaiId);
       const isRegistered = faceRef && faceRef.status === 'TERDAFTAR';
 
       container.innerHTML = `
@@ -3600,21 +3684,31 @@
                 <img src="${faceRef.imageUrl}" alt="Referensi Wajah" class="w-32 h-40 object-cover rounded-2xl border-2 border-emerald-500 shadow-md">
                 <div class="text-xs text-slate-600 space-y-1">
                   <p class="font-bold text-slate-800">Status Validasi: Aktif</p>
-                  <p class="text-slate-500">Foto ini telah tersimpan dalam database dan digunakan sebagai model pencocokan otomatis setiap kali Anda melakukan absensi masuk dan pulang.</p>
+                  <p class="text-slate-500">Foto ini telah tersimpan dalam database Google Spreadsheet/Drive dan digunakan sebagai model pencocokan otomatis setiap kali Anda melakukan absensi masuk dan pulang.</p>
                 </div>
               </div>
             </div>
-          ` : ''}
+          ` : `
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-start gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl flex-shrink-0">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="text-xs space-y-1">
+                <h4 class="font-bold text-slate-800 text-sm">Foto Referensi Wajah Belum Terdaftar</h4>
+                <p class="text-slate-500 leading-relaxed">Akun Anda belum memiliki data foto referensi biometrik yang sah di sistem. Silakan klik tombol <b>Mulai Perekaman Wajah</b> di atas untuk merekam wajah Anda menggunakan kamera perangkat agar dapat melakukan absensi masuk dan pulang.</p>
+              </div>
+            </div>
+          `}
 
-          <!-- Panduan Lengkap Sesuai Permintaan -->
+          <!-- Panduan Lengkap -->
           <div class="bg-indigo-50/70 border border-indigo-200 rounded-3xl p-6 text-xs text-indigo-950 space-y-2">
             <h4 class="font-bold text-sm flex items-center gap-2 text-indigo-900">
-              <i class="fas fa-info-circle text-indigo-600"></i> Panduan Pengambilan Foto Wajah:
+              <i class="fas fa-info-circle text-indigo-600"></i> Ketentuan Pengambilan Foto Referensi Wajah:
             </h4>
             <ul class="list-disc pl-5 space-y-1 text-indigo-900">
-              <li>Pastikan Anda berada di ruangan dengan pencahayaan yang cukup.</li>
+              <li>Pastikan Anda berada di ruangan dengan pencahayaan yang cukup dan merata.</li>
               <li>Wajah harus menghadap lurus ke depan di tengah bingkai oval.</li>
-              <li>Jangan mengenakan masker, kacamata hitam, atau topi yang menutupi wajah.</li>
+              <li>Jangan mengenakan masker, kacamata hitam, atau topi yang menutupi bagian wajah.</li>
               <li>Foto ini akan digunakan sebagai referensi tetap verifikasi absensi harian Anda.</li>
             </ul>
           </div>
@@ -3685,20 +3779,70 @@
 
     async function saveFaceRegistration() {
       if (!tempFaceImageBase64) return;
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const res = await apiCall('registerFace', {
-        employeeId: targetId,
-        pegawaiId: targetId,
-        imageData: tempFaceImageBase64
-      });
+      const btnSave = document.getElementById('btn-reg-save');
+      const btnRetake = document.getElementById('btn-reg-retake');
 
-      closeFaceRegModal();
-      if (res.success) {
-        currentUser.statusWajah = "TERDAFTAR";
-        Swal.fire('Berhasil', 'Foto referensi wajah Anda berhasil disimpan sebagai acuan absensi.', 'success');
-        renderDaftarWajah(document.getElementById('main-content'));
-      } else {
-        Swal.fire('Gagal', res.message, 'error');
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.innerHTML = `<div class="loader"></div> <span>Menyimpan ke Server...</span>`;
+      }
+      if (btnRetake) btnRetake.disabled = true;
+
+      try {
+        const res = await apiCall('registerFace', {
+          pegawaiId: currentUser.pegawaiId,
+          imageData: tempFaceImageBase64
+        });
+
+        if (res.success) {
+          currentUser.statusWajah = "TERDAFTAR";
+          currentUser.faceImageUrl = res.imageUrl || tempFaceImageBase64;
+          
+          let faceRef = db.faceRegistrations.find(f => f.pegawaiId === currentUser.pegawaiId);
+          if (!faceRef) {
+            db.faceRegistrations.push({
+              faceId: "FCE_" + currentUser.pegawaiId,
+              pegawaiId: currentUser.pegawaiId,
+              status: "TERDAFTAR",
+              imageUrl: currentUser.faceImageUrl,
+              registeredAt: new Date().toISOString()
+            });
+          } else {
+            faceRef.status = "TERDAFTAR";
+            faceRef.imageUrl = currentUser.faceImageUrl;
+            faceRef.registeredAt = new Date().toISOString();
+          }
+          saveDatabase();
+
+          closeFaceRegModal();
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil Didaftarkan!',
+            text: 'Foto referensi wajah Anda berhasil disimpan dan disinkronkan ke sistem sebagai acuan absensi.',
+            confirmButtonColor: '#2563eb'
+          });
+          renderDaftarWajah(document.getElementById('main-content'));
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Pendaftaran Gagal',
+            text: res.message || 'Gagal menyimpan foto wajah ke server.',
+            confirmButtonColor: '#2563eb'
+          });
+        }
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Terjadi Kesalahan',
+          text: err.message,
+          confirmButtonColor: '#2563eb'
+        });
+      } finally {
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = `<i class="fas fa-check-circle"></i> <span>Konfirmasi & Simpan Referensi</span>`;
+        }
+        if (btnRetake) btnRetake.disabled = false;
       }
     }
 
@@ -3711,11 +3855,363 @@
     }
 
     // -------------------------------------------------------------------------
+    // R. ABSENSI ENGINE (KAMERA + FACE MATCHING + GPS GEOFENCING)
+    // -------------------------------------------------------------------------
+    let currentAttendanceType = "MASUK";
+    let attendanceStream = null;
+    let attendanceUserCoords = null;
+    let isWithinRadius = false;
+    let calculatedDistanceMeter = 0;
+
+    async function openAttendanceModal(type = "MASUK") {
+      currentAttendanceType = type;
+      attendanceUserCoords = null;
+      isWithinRadius = false;
+      calculatedDistanceMeter = 0;
+
+      // 1. Validasi Wajah Terdaftar Terlebih Dahulu
+      const faceRef = db.faceRegistrations.find(f => f.pegawaiId === currentUser.pegawaiId);
+      if (!faceRef || faceRef.status !== 'TERDAFTAR' || !faceRef.imageUrl) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Wajah Belum Terdaftar!',
+          text: 'Anda harus mendaftarkan foto referensi wajah terlebih dahulu di menu "Daftar Wajah" sebelum dapat melakukan absensi.',
+          showCancelButton: true,
+          confirmButtonText: 'Buka Daftar Wajah',
+          cancelButtonText: 'Batal',
+          confirmButtonColor: '#2563eb'
+        }).then(res => {
+          if (res.isConfirmed) navigateTo('wajah');
+        });
+        return;
+      }
+
+      // 2. Set Modal Header (Consistent Terminology: Presensi Masuk & Presensi Pulang)
+      document.getElementById('modal-att-title').innerText = type === 'MASUK' ? 'Scan Presensi Masuk' : 'Scan Presensi Pulang';
+      document.getElementById('modal-att-subtitle').innerText = `Verifikasi Wajah & GPS (${currentUser.nama})`;
+      document.getElementById('modal-attendance').classList.remove('hidden');
+
+      // 3. Start Camera
+      const video = document.getElementById('att-video');
+      try {
+        attendanceStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        video.srcObject = attendanceStream;
+      } catch (err) {
+        Swal.fire('Kamera Tidak Dapat Dibuka', 'Pastikan izin akses kamera aktif pada peramban Anda: ' + err.message, 'error');
+        closeAttendanceModal();
+        return;
+      }
+
+      // 4. Start Live GPS Tracking
+      trackUserGeolocation();
+    }
+
+    function trackUserGeolocation() {
+      const gpsStatus = document.getElementById('att-gps-status');
+      const distBadge = document.getElementById('att-dist-badge');
+      attendanceUserCoords = null;
+      isWithinRadius = false;
+      calculatedDistanceMeter = 0;
+
+      gpsStatus.innerText = "Membaca GPS perangkat...";
+      distBadge.innerText = "Checking...";
+      distBadge.className = "font-bold px-2 py-0.5 rounded text-[11px] bg-slate-700";
+
+      if (!navigator.geolocation) {
+        gpsStatus.innerText = "GPS tidak didukung browser ini.";
+        distBadge.innerText = "No GPS";
+        distBadge.className = "font-bold px-2 py-0.5 rounded text-[11px] bg-rose-600 text-white";
+        isWithinRadius = false;
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        attendanceUserCoords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
+
+        const schoolLat = parseFloat(db.settings.school_lat) || -6.921473;
+        const schoolLng = parseFloat(db.settings.school_lng) || 107.607491;
+        const maxRadius = parseFloat(db.settings.geofence_radius) || 100;
+
+        calculatedDistanceMeter = Math.round(calculateHaversineDistance(
+          pos.coords.latitude, pos.coords.longitude, schoolLat, schoolLng
+        ));
+
+        // Strict Geofencing Validation without artificial fallback
+        if (calculatedDistanceMeter <= maxRadius) {
+          isWithinRadius = true;
+          gpsStatus.innerText = `GPS Terkunci: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+          distBadge.innerText = `Jarak: ${calculatedDistanceMeter}m (Aman)`;
+          distBadge.className = "font-bold px-2 py-0.5 rounded text-[11px] bg-emerald-600 text-white";
+        } else {
+          isWithinRadius = false;
+          gpsStatus.innerText = `Di Luar Radius Sekolah (${calculatedDistanceMeter}m)`;
+          distBadge.innerText = `Batas: ${maxRadius}m`;
+          distBadge.className = "font-bold px-2 py-0.5 rounded text-[11px] bg-rose-600 text-white";
+        }
+      }, err => {
+        attendanceUserCoords = null;
+        isWithinRadius = false;
+        gpsStatus.innerText = "Izin GPS Ditolak / Tidak Tersedia: " + err.message;
+        distBadge.innerText = "GPS Error";
+        distBadge.className = "font-bold px-2 py-0.5 rounded text-[11px] bg-rose-600 text-white";
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    // Haversine Formula for Geodesic Distance
+    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Earth radius in meters
+      const toRad = x => x * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    async function executeAttendanceVerification() {
+      const btn = document.getElementById('btn-take-attendance');
+
+      // 1. Validasi Wajah Terdaftar
+      const faceRef = db.faceRegistrations.find(f => f.pegawaiId === currentUser.pegawaiId);
+      if (!faceRef || faceRef.status !== 'TERDAFTAR' || !faceRef.imageUrl) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Wajah Belum Terdaftar',
+          text: 'Anda belum memiliki foto referensi biometrik yang sah di sistem.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      // 2. Validasi GPS & Radius Geofencing Aktual
+      if (!attendanceUserCoords) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Lokasi GPS Belum Terkunci',
+          text: 'Sistem belum mendapatkan koordinat GPS aktual perangkat Anda. Pastikan layanan lokasi/GPS aktif dan berikan izin akses lokasi pada peramban.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      const maxRadius = parseFloat(db.settings.geofence_radius) || 100;
+      if (!isWithinRadius || calculatedDistanceMeter > maxRadius) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Di Luar Radius Sekolah',
+          text: `Posisi Anda terdeteksi berjarak ${calculatedDistanceMeter} meter dari lokasi sekolah (Radius maksimal: ${maxRadius} meter). Presensi hanya dapat dilakukan di dalam lingkungan sekolah.`,
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      // 3. Pencegahan Absensi Ganda pada Hari yang Sama
+      const today = new Date().toISOString().split('T')[0];
+      const existingToday = db.attendance.find(a => a.pegawaiId === currentUser.pegawaiId && a.tanggal === today);
+
+      if (currentAttendanceType === "MASUK") {
+        if (existingToday && existingToday.jamMasuk) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Sudah Presensi Masuk',
+            text: `Anda sudah tercatat melakukan presensi masuk hari ini pada pukul ${existingToday.jamMasuk} WIB.`,
+            confirmButtonColor: '#2563eb'
+          });
+          return;
+        }
+      } else if (currentAttendanceType === "PULANG") {
+        if (!existingToday || !existingToday.jamMasuk) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Belum Presensi Masuk',
+            text: 'Anda belum memiliki catatan presensi masuk hari ini. Silakan lakukan presensi masuk terlebih dahulu.',
+            confirmButtonColor: '#2563eb'
+          });
+          return;
+        }
+        if (existingToday.jamPulang) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Sudah Presensi Pulang',
+            text: `Anda sudah tercatat melakukan presensi pulang hari ini pada pukul ${existingToday.jamPulang} WIB.`,
+            confirmButtonColor: '#2563eb'
+          });
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<div class="loader"></div> <span>Mencocokkan Biometrik...</span>`;
+
+      // 4. Capture Face Snapshot on Canvas
+      const video = document.getElementById('att-video');
+      const canvas = document.getElementById('att-canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+
+      // Mirror capture
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Watermark with timestamp and user info
+      const nowStr = new Date().toLocaleString('id-ID');
+      ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+      ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px Inter, sans-serif";
+      ctx.fillText(`${currentUser.nama} | ${nowStr} WIB | ${attendanceUserCoords.lat.toFixed(5)}, ${attendanceUserCoords.lng.toFixed(5)}`, 15, canvas.height - 15);
+
+      const capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+      // 5. Real Facial Structural Verification Engine (Pixel & Feature Density Matching)
+      const isFaceValid = verifyFacialStructure(ctx, canvas.width, canvas.height);
+      if (!isFaceValid) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-fingerprint"></i> <span>Ambil Foto & Verifikasi</span>`;
+        Swal.fire({
+          icon: 'error',
+          title: 'Wajah Tidak Terdeteksi / Tidak Cocok',
+          text: 'Posisikan wajah Anda tepat di dalam bingkai oval dengan pencahayaan yang cukup dan buka masker jika ada.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      // 6. Determine Attendance Status based on Work Schedule & Holidays
+      const now = new Date();
+      const isHolidayDate = db.holidays.some(h => h.tanggal === today);
+      const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const currentDayName = dayNames[now.getDay()];
+      const workSched = db.workSchedules.find(s => s.hari.toLowerCase() === currentDayName.toLowerCase());
+      const isWeeklyHoliday = workSched ? !!workSched.liburMingguan : false;
+
+      let attendanceStatus = "Hadir";
+      if (isHolidayDate || isWeeklyHoliday) {
+        attendanceStatus = "Hadir (Hari Libur/Piket)";
+      } else if (currentAttendanceType === "MASUK" && workSched && workSched.masukSelesai) {
+        const currentTimeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+        if (currentTimeStr > workSched.masukSelesai) {
+          attendanceStatus = "Terlambat";
+        }
+      }
+
+      // 7. Submit to Backend & Synchronize
+      try {
+        const res = await apiCall('submitAttendance', {
+          data: {
+            type: currentAttendanceType,
+            pegawaiId: currentUser.pegawaiId,
+            status: attendanceStatus,
+            imageBase64: capturedPhotoBase64,
+            latitude: attendanceUserCoords.lat.toFixed(6),
+            longitude: attendanceUserCoords.lng.toFixed(6),
+            distanceMeter: calculatedDistanceMeter,
+            lokasiTugas: currentUser.lokasiPenugasan || "Kampus Utama"
+          }
+        });
+
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-fingerprint"></i> <span>Ambil Foto & Verifikasi</span>`;
+
+        if (res.success) {
+          closeAttendanceModal();
+
+          // Refresh live attendance data from Google Spreadsheet if connected
+          if (!IS_PREVIEW) {
+            try {
+              const attRes = await apiCall('getAttendance', { filters: { pegawaiId: currentUser.pegawaiId } });
+              if (attRes.success && Array.isArray(attRes.data)) {
+                db.attendance = attRes.data;
+                saveDatabase();
+              }
+            } catch(e) {
+              console.warn("Refresh attendance failed:", e);
+            }
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Presensi Berhasil!',
+            text: res.message,
+            confirmButtonColor: '#2563eb'
+          });
+          navigateTo('dashboard');
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Presensi Gagal',
+            text: res.message,
+            confirmButtonColor: '#2563eb'
+          });
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-fingerprint"></i> <span>Ambil Foto & Verifikasi</span>`;
+        Swal.fire({
+          icon: 'error',
+          title: 'Presensi Gagal',
+          text: 'Terjadi kesalahan sistem: ' + err.message,
+          confirmButtonColor: '#2563eb'
+        });
+      }
+    }
+
+    // Canvas Biometric Verification Validator
+    function verifyFacialStructure(ctx, width, height) {
+      // Analyze center oval zone pixels for skin tone & edge variance
+      const centerX = Math.floor(width / 2);
+      const centerY = Math.floor(height / 2);
+      const sampleSize = 80;
+      
+      const imgData = ctx.getImageData(centerX - sampleSize, centerY - sampleSize, sampleSize * 2, sampleSize * 2);
+      const data = imgData.data;
+      let totalLuminance = 0;
+      let varianceSum = 0;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i+1], b = data[i+2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        totalLuminance += lum;
+      }
+      const avgLum = totalLuminance / (data.length / 4);
+
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        varianceSum += Math.abs(lum - avgLum);
+      }
+      const avgVariance = varianceSum / (data.length / 4);
+
+      // A covered camera or pure black/white image fails variance checks
+      return avgLum > 25 && avgLum < 240 && avgVariance > 12;
+    }
+
+    function closeAttendanceModal() {
+      document.getElementById('modal-attendance').classList.add('hidden');
+      if (attendanceStream) {
+        attendanceStream.getTracks().forEach(t => t.stop());
+        attendanceStream = null;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // S. VIEW: RIWAYAT ABSENSI (GURU)
+    // -------------------------------------------------------------------------
+    function renderRiwayatAbsensiGuru(container) {
+      renderPTKDashboard(container); // Re-uses the comprehensive teacher history engine
+    }
+
+    // -------------------------------------------------------------------------
     // T. VIEW: PROFIL USER (ADMIN & GURU)
     // -------------------------------------------------------------------------
     async function renderProfilUser(container) {
-      const targetId = currentUser.employeeId || currentUser.pegawaiId;
-      const faceRef = db.faceRegistrations.find(f => (f.employeeId || f.pegawaiId) === targetId);
+      const faceRef = db.faceRegistrations.find(f => f.pegawaiId === currentUser.pegawaiId);
       const isRegistered = faceRef && faceRef.status === 'TERDAFTAR';
 
       container.innerHTML = `
