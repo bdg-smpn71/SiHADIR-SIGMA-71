@@ -102,7 +102,7 @@
   <script>
     // Mode produksi terhubung penuh ke Google Apps Script & Google Sheets
     const IS_PREVIEW = false;
-    const GAS_URL = "https://script.google.com/a/~/macros/s/AKfycbxZZYnzdK_rKeOO6irCXzQ1_81fuQ1na3dpFrjp9PQY79rQ9c0hfuDh5faiNJeX9CzlIg/exec";
+    const GAS_URL = "https://script.google.com/a/~/macros/s/AKfycby_nMK_obhI8NNRzOjQ0c7XqqoQITddShYuIx_ZenA0eSGzbZAdzsbwOoNMbtpO2rlVqw/exec";
 
     // Application Global State
     let currentUser = null;
@@ -246,7 +246,7 @@
         
         <!-- Big Quick Action Absen Button (Exclusively for Guru PTK - Sesuai Gambar 2) -->
         <div id="sidebar-quick-scan-wrapper" class="hidden">
-          <div onclick="openAttendanceModal('MASUK')" 
+          <div onclick="handleGuruAttendanceClick()" 
                class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 cursor-pointer hover:shadow-xl hover:shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition group border border-white/10">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-xl text-white group-hover:rotate-12 transition">
@@ -350,69 +350,106 @@
   <!-- 3. MODALS & POPUPS                         -->
   <!-- ========================================== -->
 
-  <!-- Modal Face Recognition Attendance (Absen Sekarang) -->
-  <div id="modal-attendance" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 flex flex-col">
-      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg shadow-md shadow-blue-500/20">
-            <i class="fas fa-camera"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-800" id="modal-att-title">Scan Presensi Mandiri</h3>
-            <p class="text-xs text-slate-500" id="modal-att-subtitle">Verifikasi Wajah & GPS Lokasi</p>
+  <!-- Modal Face Recognition Attendance (Satu Fitur Scan Masuk & Pulang - Persis Sesuai Gambar 3) -->
+  <div id="modal-attendance" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col justify-between overflow-y-auto p-4 sm:p-6">
+    <div class="max-w-md w-full mx-auto flex flex-col h-full justify-between">
+      
+      <!-- Header Scan (Sesuai Gambar 3) -->
+      <div class="flex items-center justify-between mb-3 text-white">
+        <button type="button" onclick="closeAttendanceModal()" class="w-10 h-10 flex items-center justify-center text-white hover:text-slate-300 transition">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+        <h3 class="text-base sm:text-lg font-bold text-white text-center flex-1">Absensi</h3>
+        <div class="w-10"></div>
+      </div>
+
+      <!-- Top Guidance Card (Sesuai Gambar 3) -->
+      <div class="mb-3 p-4 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-white/10 text-white flex items-start gap-3 shadow-lg">
+        <div class="w-9 h-9 rounded-full bg-slate-800 text-white flex items-center justify-center text-lg flex-shrink-0">
+          <i class="fas fa-smile"></i>
+        </div>
+        <div class="flex-1 overflow-hidden">
+          <h4 class="font-bold text-xs sm:text-sm text-white">Posisikan wajah Anda di dalam frame</h4>
+          <p class="text-[11px] text-slate-300 mt-0.5">Pastikan pencahayaan cukup dan wajah mengisi lingkaran</p>
+          <div class="flex items-center gap-2 mt-2 text-xs font-semibold" id="att-top-status-wrapper">
+            <i id="att-top-status-icon" class="fas fa-circle-notch fa-spin text-blue-400"></i>
+            <span id="att-top-status-text" class="text-slate-300">Memvalidasi lokasi...</span>
           </div>
         </div>
-        <button onclick="closeAttendanceModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 flex items-center justify-center">
-          <i class="fas fa-times"></i>
+      </div>
+
+      <!-- Camera Stream with Center Oval & 4 Corner Brackets (Sesuai Gambar 3) -->
+      <div class="relative w-full aspect-[3/4] max-h-[52vh] bg-black rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center border border-white/10">
+        <video id="att-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        
+        <!-- White Oval Guide with 4 Corner Brackets (Sesuai Gambar 3) -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="relative w-56 h-72 sm:w-64 sm:h-80 flex items-center justify-center">
+            <!-- White Oval Frame -->
+            <div class="w-48 h-64 sm:w-56 sm:h-72 border-2 border-white rounded-[50%/60%] shadow-lg"></div>
+            <!-- 4 Corner Brackets -->
+            <div class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white"></div>
+            <div class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white"></div>
+            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white"></div>
+            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden Canvas for capture -->
+      <canvas id="att-canvas" class="hidden"></canvas>
+
+      <!-- Bottom Status & Action Card (Sesuai Gambar 3) -->
+      <div class="mt-4 p-4 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-white/10 text-white space-y-3 shadow-lg">
+        <div class="flex items-center justify-center gap-2 text-xs font-semibold" id="att-bottom-status-line">
+          <i id="att-bottom-icon" class="fas fa-circle-notch fa-spin text-slate-400"></i>
+          <span id="att-bottom-text" class="text-slate-300">Tunggu Validasi Lokasi</span>
+        </div>
+        <button id="btn-take-attendance" onclick="executeAttendanceVerification()" disabled
+                class="w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-slate-700/80 text-slate-400 cursor-not-allowed">
+          <i id="btn-take-icon" class="fas fa-circle-notch fa-spin"></i>
+          <span id="btn-take-text">Tunggu Validasi Lokasi</span>
         </button>
       </div>
 
-      <div class="p-6 space-y-4">
-        <!-- Camera Preview Container -->
-        <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
-          <video id="att-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
-          
-          <!-- Oval Face Framing Guide -->
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="w-56 h-72 face-oval-guide relative">
-              <div class="face-scan-line"></div>
-            </div>
-          </div>
+    </div>
+  </div>
 
-          <!-- Live GPS & Distance Badge with Refresh Button -->
-          <div id="att-gps-badge" class="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur text-white px-3 py-2 rounded-xl text-xs flex items-center justify-between">
-            <span class="flex items-center gap-1.5 truncate">
-              <i class="fas fa-map-marker-alt text-rose-400"></i>
-              <span id="att-gps-status">Mengunci sinyal GPS presisi tinggi...</span>
-            </span>
-            <div class="flex items-center gap-1.5 flex-shrink-0">
-              <span id="att-dist-badge" class="font-bold px-2 py-0.5 rounded text-[11px] bg-slate-700">Membaca...</span>
-              <button type="button" onclick="trackUserGeolocation()" class="text-slate-300 hover:text-white p-1" title="Perbarui Lokasi GPS">
-                <i class="fas fa-sync-alt"></i>
-              </button>
-            </div>
-          </div>
+  <!-- Modal Dialog Lokasi Tidak Valid (Persis Sesuai Gambar 4) -->
+  <div id="modal-invalid-location" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm sm:max-w-md w-full shadow-2xl relative text-left" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center text-xl flex-shrink-0">
+          <i class="fas fa-location-arrow"></i>
         </div>
+        <h3 class="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Lokasi Tidak Valid</h3>
+      </div>
+      
+      <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
+        Anda berada di luar radius kantor. Jarak ke <span id="invalid-loc-school" class="font-semibold text-slate-800">SMP NEGERI 71 BANDUNG</span>: <span id="invalid-loc-dist" class="font-bold text-rose-600">--</span> (maksimal <span id="invalid-loc-radius">--</span> meter)
+      </p>
 
-        <!-- Hidden Canvas for capture -->
-        <canvas id="att-canvas" class="hidden"></canvas>
-
-        <!-- Status & Guidance Message -->
-        <div id="att-status-msg" class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs flex items-start gap-2">
-          <i class="fas fa-info-circle text-sm mt-0.5"></i>
-          <span>Posisikan wajah Anda di dalam bingkai oval dengan pencahayaan memadai dan pastikan Anda berada di lingkungan sekolah.</span>
-        </div>
+      <div class="space-y-1 text-xs text-slate-500 mb-4 pb-3 border-b border-slate-100">
+        <p><span class="font-semibold text-slate-700">Kantor terdekat:</span> <span id="invalid-loc-school-2">SMP NEGERI 71 BANDUNG</span></p>
+        <p><span class="font-semibold text-slate-700">Jarak:</span> <span id="invalid-loc-dist-2">--</span></p>
+        <p><span class="font-semibold text-slate-700">Radius maksimal:</span> <span id="invalid-loc-radius-2">--</span> meter</p>
       </div>
 
-      <div class="p-5 border-t border-slate-100 flex gap-3 bg-slate-50">
-        <button onclick="closeAttendanceModal()" class="w-1/3 py-2.5 px-4 bg-white border border-slate-300 text-slate-700 font-semibold rounded-xl text-xs hover:bg-slate-100 transition">
+      <div class="text-xs text-slate-600 space-y-1.5 mb-6">
+        <p class="font-bold text-slate-800">Tips:</p>
+        <p class="text-slate-500 pl-2">• Pastikan Anda berada di area kantor</p>
+        <p class="text-slate-500 pl-2">• Periksa apakah GPS/lokasi aktif</p>
+        <p class="text-slate-500 pl-2">• Coba pindah ke lokasi yang lebih dekat dengan kantor</p>
+      </div>
+
+      <div class="flex items-center justify-end gap-3">
+        <button type="button" onclick="closeInvalidLocationDialog()" 
+                class="px-5 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition">
           Batal
         </button>
-        <button id="btn-take-attendance" onclick="executeAttendanceVerification()" 
-                class="w-2/3 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2">
-          <i class="fas fa-fingerprint"></i>
-          <span>Ambil Foto & Verifikasi</span>
+        <button type="button" onclick="retryGeolocation()" 
+                class="px-5 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition">
+          Coba Lagi
         </button>
       </div>
     </div>
