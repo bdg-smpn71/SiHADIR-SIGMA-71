@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SiHADIR SIGMA 71</title>
+  <title>SIHADIR SIGMA 71</title>
   <meta name="theme-color" content="#0F1E36" />
-  <meta name="description" content="SIstem Informasi Kehadiran PTK" />
+  <meta name="description" content="Sistem Informasi Kehadiran PTK" />
 
   <!-- PWA Manifest Data URI (1-File Mandate) -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Gercep Asik - Presensi Sekolah Modern","short_name":"GercepAsik","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
+  <link rel="manifest" href='data:application/manifest+json,{"name":"SIHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK","short_name":"GercepAsik","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
 
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -468,16 +468,18 @@
         <section id="guru-tab-profil" class="hidden space-y-4">
           <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
             <div class="flex flex-col items-center text-center mb-6">
-              <div id="profil-avatar-preview" class="w-24 h-24 rounded-full bg-slate-100 border-2 border-brandteal-700 flex items-center justify-center overflow-hidden mb-2 shadow-sm">
-                <i data-lucide="user" class="w-12 h-12 text-slate-500"></i>
+              <div id="profil-avatar-preview" class="w-24 h-24 rounded-full bg-slate-100 border-2 border-brandteal-700 flex items-center justify-center overflow-hidden mb-2 shadow-sm relative">
+                <img id="profil-avatar-img" src="" class="w-full h-full object-cover hidden" alt="Foto Profil" />
+                <i id="profil-avatar-icon" data-lucide="user" class="w-12 h-12 text-slate-500"></i>
               </div>
               
-              <!-- Input Upload Foto Dari Perangkat -->
+              <!-- Input Upload Foto Dari Perangkat (Khusus Foto Profil) -->
               <input type="file" id="input-profil-avatar-file" accept="image/*" class="hidden" onchange="window.app.handleAvatarUpload(event)" />
               <button
                 type="button"
                 onclick="document.getElementById('input-profil-avatar-file').click()"
                 class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-sm transition mb-2"
+                title="Unggah Foto Profil (Tidak mempengaruhi pendaftaran biometrik wajah)"
               >
                 <i data-lucide="image-plus" class="w-3.5 h-3.5 text-brandteal-700"></i>
                 <span>Unggah Foto Profil</span>
@@ -565,7 +567,7 @@
           </div>
           <div class="overflow-hidden">
             <h2 id="admin-sidebar-title" class="text-sm font-extrabold text-slate-900 truncate">SIHADIR SIGMA 71</h2>
-            <p class="text-[11px] text-slate-500 font-medium truncate">Panel Manajemen Sekolah</p>
+            <p class="text-[11px] text-slate-500 font-medium truncate">Selamat Datang</p>
           </div>
         </div>
 
@@ -1056,6 +1058,15 @@
                       <option value="Semua Guru & Pegawai">Semua Guru & Pegawai SMPN 71</option>
                       <option value="Guru Mata Pelajaran">Guru Mata Pelajaran</option>
                       <option value="Tenaga Kependidikan">Tenaga Kependidikan</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Kategori Pengumuman</label>
+                    <select id="announce-input-category" class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600">
+                      <option value="Penting" selected>Penting / Mendesak</option>
+                      <option value="Kegiatan">Kegiatan / Agenda Sekolah</option>
+                      <option value="Informasi">Informasi Umum</option>
                     </select>
                   </div>
 
@@ -2125,8 +2136,8 @@
       const subtitleEl = document.getElementById('login-app-subtitle');
       const sideTitleEl = document.getElementById('admin-sidebar-title');
 
-      if (titleEl) titleEl.textContent = cfg.app_name || 'Gercep Asik';
-      if (subtitleEl) subtitleEl.textContent = cfg.app_subtitle || 'Masuk untuk melanjutkan ke layanan kepegawaian.';
+      if (titleEl) titleEl.textContent = cfg.app_name || 'SIHADIR SIGMA 71';
+      if (subtitleEl) subtitleEl.textContent = cfg.app_subtitle || 'Masuk untuk melanjutkan ke layanan presensi.';
       if (sideTitleEl) sideTitleEl.textContent = cfg.app_name || 'SIHADIR SIGMA 71';
 
       const customLogo = document.getElementById('login-logo-custom');
@@ -2235,7 +2246,23 @@
     }
 
     // Google Login Modal & Handler
-    function handleGoogleLogin() {
+    async function handleGoogleLogin() {
+      // 1. Coba OAuth Google resmi jika Supabase aktif di domain web
+      if (!IS_PREVIEW && supabase && window.location.protocol.startsWith('http')) {
+        try {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: window.location.origin + window.location.pathname
+            }
+          });
+          if (!error) return;
+        } catch (e) {
+          console.warn('OAuth redirect fallback ke modal akun Google:', e);
+        }
+      }
+
+      // 2. Selalu tampilkan dialog modal pemilih akun Google yang responsif
       const modal = document.getElementById('modal-google-login');
       if (modal) {
         modal.classList.remove('hidden');
@@ -2250,7 +2277,7 @@
 
     function executeGoogleLoginWithEmail(email, name, nip, role = 'guru') {
       closeGoogleLoginModal();
-      if (role === 'admin') {
+      if (role === 'admin' || email.toLowerCase().includes('admin')) {
         state.currentUser = { role: 'admin', email: email };
         openAdminDashboard();
         showToast(`Berhasil Masuk dengan Akun Google: ${email} (Administrator)`, 'success');
@@ -2265,9 +2292,10 @@
           email: email,
           password: 'google-oauth',
           full_name: name || email.split('@')[0].toUpperCase(),
-          position: 'Guru Pengajar',
-          face_registered: true,
-          face_photo_url: ''
+          position: 'Guru Pegawai',
+          face_registered: false,
+          face_photo_url: '',
+          avatar_url: ''
         };
         state.teachers.push(existingTeacher);
       }
@@ -2357,8 +2385,9 @@
       document.getElementById('guru-header-nip').textContent = user.nip;
 
       const avatarEl = document.getElementById('guru-header-avatar');
-      if (user.face_photo_url) {
-        avatarEl.innerHTML = `<img src="${user.face_photo_url}" class="w-full h-full object-cover" alt="Foto Wajah" />`;
+      const photo = user.avatar_url || user.face_photo_url;
+      if (photo) {
+        avatarEl.innerHTML = `<img src="${photo}" class="w-full h-full object-cover" alt="Foto Profil" />`;
       } else {
         avatarEl.innerHTML = `<i data-lucide="user" class="w-7 h-7 stroke-[1.75]"></i>`;
       }
@@ -2444,11 +2473,24 @@
       } else {
         const isLate = todayRecord.status === 'Terlambat';
         const isComplete = todayRecord.status === 'Lengkap';
-        const badgeColor = isComplete
+        const isDitolak = todayRecord.status === 'Ditolak';
+        const isSpecial = ['Sakit', 'Izin', 'Dinas Luar', 'WFA/H', 'Ditolak'].includes(todayRecord.status);
+
+        const badgeColor = isDitolak
+          ? 'bg-rose-100 text-rose-800'
+          : todayRecord.status === 'Dinas Luar'
+          ? 'bg-blue-100 text-blue-800'
+          : todayRecord.status === 'WFA/H'
+          ? 'bg-teal-100 text-teal-800'
+          : ['Sakit', 'Izin'].includes(todayRecord.status)
+          ? 'bg-purple-100 text-purple-800'
+          : isComplete
           ? 'bg-emerald-100 text-emerald-800'
           : isLate
           ? 'bg-amber-100 text-amber-800'
           : 'bg-blue-100 text-blue-800';
+
+        const iconName = isDitolak ? 'x-circle' : (isLate ? 'alert-triangle' : (isSpecial ? 'file-text' : 'check-circle-2'));
 
         html += `
           <div class="rounded-2xl border-[1.5px] border-blue-400 bg-blue-50/40 p-4 flex items-center gap-3.5 shadow-sm">
@@ -2463,7 +2505,7 @@
                   Hari ini
                 </span>
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${badgeColor}">
-                  <i data-lucide="${isLate ? 'alert-triangle' : 'check-circle-2'}" class="w-3.5 h-3.5"></i> ${todayRecord.status}
+                  <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i> ${todayRecord.status}
                 </span>
               </div>
               <div class="grid grid-cols-2 gap-2">
@@ -2490,7 +2532,20 @@
       pastRecords.forEach(item => {
         const dp = formatDateIndoShort(item.attendance_date);
         const isLate = item.status === 'Terlambat';
-        const isLeave = ['Sakit', 'Izin', 'Dinas Luar', 'WFA/H'].includes(item.status);
+        const isDitolak = item.status === 'Ditolak';
+        const isSpecial = ['Sakit', 'Izin', 'Dinas Luar', 'WFA/H', 'Ditolak'].includes(item.status);
+
+        const statusBadgeClass = isDitolak
+          ? 'bg-rose-100 text-rose-800'
+          : item.status === 'Dinas Luar'
+          ? 'bg-blue-100 text-blue-800'
+          : item.status === 'WFA/H'
+          ? 'bg-teal-100 text-teal-800'
+          : ['Sakit', 'Izin'].includes(item.status)
+          ? 'bg-purple-100 text-purple-800'
+          : isLate
+          ? 'bg-amber-100 text-amber-800'
+          : 'bg-emerald-100 text-emerald-800';
 
         if (!item.check_in_time && item.notes) {
           html += `
@@ -2504,7 +2559,7 @@
                 <h4 class="text-[15px] font-extrabold text-navy-900">${item.status}</h4>
                 <p class="text-xs text-slate-500 mt-0.5">${item.notes}</p>
               </div>
-              <span class="px-3 py-1 rounded-lg ${isLeave ? 'bg-purple-100 text-purple-800' : 'bg-emerald-50 text-emerald-700'} text-xs font-bold shrink-0">
+              <span class="px-3 py-1 rounded-lg ${statusBadgeClass} text-xs font-bold shrink-0">
                 ${item.status}
               </span>
             </div>
@@ -2519,8 +2574,8 @@
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex justify-end mb-1">
-                  <span class="px-2.5 py-0.5 rounded-full ${isLate ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-700'} text-xs font-bold inline-flex items-center gap-1">
-                    <i data-lucide="${isLate ? 'alert-triangle' : 'check-circle-2'}" class="w-3.5 h-3.5"></i> ${item.status || 'Lengkap'}
+                  <span class="px-2.5 py-0.5 rounded-full ${statusBadgeClass} text-xs font-bold inline-flex items-center gap-1">
+                    <i data-lucide="${isDitolak ? 'x-circle' : (isLate ? 'alert-triangle' : (isSpecial ? 'file-text' : 'check-circle-2'))}" class="w-3.5 h-3.5"></i> ${item.status || 'Lengkap'}
                   </span>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
@@ -2634,27 +2689,42 @@
       document.getElementById('profil-full-name').textContent = user.full_name;
       document.getElementById('profil-nip').textContent = `NIP/NUPTK: ${user.nip}`;
       document.getElementById('input-profil-name').value = user.full_name || '';
+      
+      const nipInput = document.getElementById('input-profil-nip');
+      if (nipInput) nipInput.value = user.nip || '-';
+
       document.getElementById('input-profil-email').value = user.email || '';
       document.getElementById('input-profil-position').value = user.position || '';
       document.getElementById('input-profil-password').value = '';
 
-      const avatarPreview = document.getElementById('profil-avatar-preview');
-      if (avatarPreview && user.face_photo_url) {
-        avatarPreview.src = user.face_photo_url;
+      const avatarImg = document.getElementById('profil-avatar-img');
+      const avatarIcon = document.getElementById('profil-avatar-icon');
+      const photoToDisplay = user.avatar_url || user.face_photo_url || '';
+      if (photoToDisplay) {
+        if (avatarImg) {
+          avatarImg.src = photoToDisplay;
+          avatarImg.classList.remove('hidden');
+        }
+        if (avatarIcon) avatarIcon.classList.add('hidden');
+      } else {
+        if (avatarImg) avatarImg.classList.add('hidden');
+        if (avatarIcon) avatarIcon.classList.remove('hidden');
       }
 
       const badge = document.getElementById('profil-face-badge');
-      if (user.face_registered) {
-        badge.className = 'mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
-        badge.innerHTML = `<i data-lucide="scan-face" class="w-3.5 h-3.5"></i> Biometrik Wajah Aktif`;
-      } else {
-        badge.className = 'mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800';
-        badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Wajah Belum Direkam`;
+      if (badge) {
+        if (user.face_registered) {
+          badge.className = 'mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+          badge.innerHTML = `<i data-lucide="scan-face" class="w-3.5 h-3.5"></i> Biometrik Wajah Aktif`;
+        } else {
+          badge.className = 'mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800';
+          badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Wajah Belum Direkam`;
+        }
       }
       lucide.createIcons();
     }
 
-    // Upload Foto Profil dari Device (Mobile/Tablet/PC)
+    // Upload Foto Profil dari Device (Khusus Profil, Terpisah dari Biometrik Wajah)
     async function handleAvatarUpload(event) {
       const file = event.target.files?.[0];
       if (!file) return;
@@ -2686,10 +2756,16 @@
 
           const user = state.currentUser;
           if (user) {
-            user.face_photo_url = dataUrl;
-            user.face_registered = true;
-            const previewImg = document.getElementById('profil-avatar-preview');
-            if (previewImg) previewImg.src = dataUrl;
+            // HANYA simpan sebagai foto profil (avatar_url), JANGAN ubah status biometrik wajah!
+            user.avatar_url = dataUrl;
+
+            const avatarImg = document.getElementById('profil-avatar-img');
+            const avatarIcon = document.getElementById('profil-avatar-icon');
+            if (avatarImg) {
+              avatarImg.src = dataUrl;
+              avatarImg.classList.remove('hidden');
+            }
+            if (avatarIcon) avatarIcon.classList.add('hidden');
 
             const headerAvatar = document.getElementById('guru-header-avatar');
             if (headerAvatar) {
@@ -2697,17 +2773,18 @@
             }
 
             if (!IS_PREVIEW && supabase) {
-              await supabase.from('teachers').update({ face_photo_url: dataUrl, face_registered: true }).eq('id', user.id);
+              try {
+                await supabase.from('teachers').update({ avatar_url: dataUrl }).eq('id', user.id);
+              } catch (e) {}
             }
             const tIdx = state.teachers.findIndex(t => t.id === user.id);
             if (tIdx !== -1) {
-              state.teachers[tIdx].face_photo_url = dataUrl;
-              state.teachers[tIdx].face_registered = true;
+              state.teachers[tIdx].avatar_url = dataUrl;
             }
 
             renderGuruHeaderAndButton();
             populateGuruProfileForm();
-            showToast('Foto profil dari perangkat Anda berhasil disimpan otomatis!', 'success');
+            showToast('Foto profil berhasil diunggah dan langsung tampil di profil!', 'success');
           }
         };
         img.src = e.target.result;
@@ -3327,16 +3404,25 @@
     // FITUR PENGUMUMAN & NOTIFIKASI LONCENG
     // ====================================================
     async function handleSendAnnouncement(event) {
-      event.preventDefault();
-      const title = document.getElementById('ann-input-title').value.trim();
-      const target = document.getElementById('ann-input-target').value;
-      const category = document.getElementById('ann-input-category').value;
-      const message = document.getElementById('ann-input-desc').value.trim();
+      if (event) event.preventDefault();
+      
+      const titleEl = document.getElementById('announce-input-title') || document.getElementById('ann-input-title');
+      const targetEl = document.getElementById('announce-input-target') || document.getElementById('ann-input-target');
+      const categoryEl = document.getElementById('announce-input-category') || document.getElementById('ann-input-category');
+      const msgEl = document.getElementById('announce-input-message') || document.getElementById('ann-input-desc');
+
+      const title = titleEl ? titleEl.value.trim() : '';
+      const target = targetEl ? targetEl.value : 'Semua Guru & Pegawai';
+      const category = categoryEl ? categoryEl.value : 'Penting';
+      const message = msgEl ? msgEl.value.trim() : '';
 
       if (!title || !message) {
         showToast('Judul dan Isi Pengumuman wajib diisi.', 'warning');
         return;
       }
+
+      const now = new Date();
+      const dateStr = now.toISOString().replace('T', ' ').substring(0, 16);
 
       const newAnn = {
         id: 'ann-' + Date.now(),
@@ -3344,7 +3430,7 @@
         target: target,
         category: category,
         message: message,
-        created_at: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        created_at: dateStr,
         is_read: false
       };
 
@@ -3357,22 +3443,27 @@
             message: newAnn.message,
             is_read: false
           }]);
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Gagal simpan pengumuman ke Supabase:', e);
+        }
       }
 
       state.announcements.unshift(newAnn);
       state.unreadAnnouncementsCount++;
 
-      document.getElementById('ann-input-title').value = '';
-      document.getElementById('ann-input-desc').value = '';
+      if (titleEl) titleEl.value = '';
+      if (msgEl) msgEl.value = '';
 
       renderAdminAnnouncementsList();
       renderGuruHeaderAndButton();
-      showToast('Pengumuman berhasil disiarkan! Notifikasi terkirim ke icon lonceng guru.', 'success');
+      showToast('Pengumuman berhasil disiarkan! Notifikasi langsung tampil di ikon lonceng guru.', 'success');
     }
 
     function renderAdminAnnouncementsList() {
       const container = document.getElementById('admin-announcements-list');
+      const totalBadge = document.getElementById('announce-total-badge');
+      if (totalBadge) totalBadge.textContent = `${state.announcements.length} Pesan`;
+
       if (!container) return;
 
       if (!state.announcements.length) {
@@ -3388,17 +3479,17 @@
           : 'bg-emerald-100 text-emerald-800';
 
         return `
-          <div class="p-3.5 rounded-xl border border-slate-200 bg-white flex items-start justify-between gap-3 shadow-sm">
+          <div class="p-3.5 rounded-xl border border-slate-200 bg-white flex items-start justify-between gap-3 shadow-sm hover:border-blue-300 transition">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${catBadge}">${a.category}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${catBadge}">${a.category || 'Penting'}</span>
                 <span class="text-[11px] text-slate-400 font-mono">${a.created_at}</span>
                 <span class="text-[11px] text-blue-700 font-bold">• ${a.target}</span>
               </div>
               <h5 class="text-sm font-extrabold text-slate-900">${a.title}</h5>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">${a.message}</p>
             </div>
-            <button onclick="window.app.deleteAnnouncement('${a.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Hapus">
+            <button onclick="window.app.deleteAnnouncement('${a.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Hapus Pengumuman">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
@@ -3417,7 +3508,7 @@
 
     function openGuruNotificationsModal() {
       const modal = document.getElementById('modal-guru-notifikasi');
-      const listContainer = document.getElementById('guru-notif-modal-list');
+      const listContainer = document.getElementById('guru-notifications-list') || document.getElementById('guru-notif-modal-list');
       if (!modal || !listContainer) return;
 
       if (!state.announcements.length) {
@@ -3431,9 +3522,9 @@
             : 'bg-emerald-100 text-emerald-800';
 
           return `
-            <div class="p-3.5 rounded-2xl border ${!a.is_read ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-white'} shadow-sm">
+            <div class="p-3.5 rounded-2xl border ${!a.is_read ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200 bg-white'} shadow-sm">
               <div class="flex items-center justify-between mb-1">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${catBadge}">${a.category}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${catBadge}">${a.category || 'Penting'}</span>
                 <span class="text-[11px] text-slate-400 font-mono">${a.created_at}</span>
               </div>
               <h4 class="text-sm font-extrabold text-navy-900">${a.title}</h4>
@@ -3854,21 +3945,41 @@
       const countHadir = todayAtts.filter(a => a.status === 'Hadir' || a.status === 'Lengkap').length;
       const countTerlambat = todayAtts.filter(a => a.status === 'Terlambat').length;
       const countDinas = todayAtts.filter(a => a.status === 'Dinas Luar').length;
-      const countIzin = todayAtts.filter(a => ['Sakit', 'Izin', 'WFA/H'].includes(a.status)).length;
+      const countWFA = todayAtts.filter(a => a.status === 'WFA/H').length;
+      const countIzinSakit = todayAtts.filter(a => ['Sakit', 'Izin'].includes(a.status)).length;
+      const countWfahIzinAll = countWFA + countIzinSakit;
       const pendingCount = state.leaveRequests.filter(l => l.status === 'Menunggu').length;
 
-      // KPI Cards
-      const kpiTotal = document.getElementById('kpi-total-guru');
-      const kpiHadir = document.getElementById('kpi-hadir-tepat');
+      // 1. UPDATE KPI CARDS PADA MENU DASHBOARD & GRAFIK (Real-Time)
+      const kpiHadir = document.getElementById('kpi-hadir');
       const kpiTerlambat = document.getElementById('kpi-terlambat');
-      const kpiDinasIzin = document.getElementById('kpi-dinas-izin');
+      const kpiDinas = document.getElementById('kpi-dinas');
+      const kpiWfahIzin = document.getElementById('kpi-wfah-izin');
+      const kpiTotal = document.getElementById('kpi-total-guru');
       const pendingBadge = document.getElementById('admin-pending-badge');
 
-      if (kpiTotal) kpiTotal.textContent = state.teachers.length;
       if (kpiHadir) kpiHadir.textContent = countHadir;
       if (kpiTerlambat) kpiTerlambat.textContent = countTerlambat;
-      if (kpiDinasIzin) kpiDinasIzin.textContent = countDinas + countIzin;
+      if (kpiDinas) kpiDinas.textContent = countDinas;
+      if (kpiWfahIzin) kpiWfahIzin.textContent = countWfahIzinAll;
+      if (kpiTotal) kpiTotal.textContent = state.teachers.length;
       if (pendingBadge) pendingBadge.textContent = pendingCount;
+
+      // 2. UPDATE KPI CARDS PADA MENU MONITORING PRESENSI (Real-Time)
+      const statTotalGuru = document.getElementById('stat-total-guru');
+      const statTotalHadir = document.getElementById('stat-total-hadir');
+      const statTotalDinas = document.getElementById('stat-total-dinas');
+      const statTotalIzin = document.getElementById('stat-total-izin');
+
+      if (statTotalGuru) statTotalGuru.textContent = state.teachers.length;
+      if (statTotalHadir) statTotalHadir.textContent = countHadir + countTerlambat;
+      if (statTotalDinas) statTotalDinas.textContent = countDinas + countWFA;
+      if (statTotalIzin) statTotalIzin.textContent = countIzinSakit;
+
+      // Sinkronkan grafik bila tab dashboard aktif
+      if (state.activeAdminTab === 'dashboard') {
+        renderAdminCharts();
+      }
 
       // 1. Tabel Monitoring Presensi
       const monTbody = document.getElementById('admin-monitoring-tbody');
@@ -4051,7 +4162,7 @@
       renderFilteredAdminReportTable();
     }
 
-    // Direct Status Update untuk Verifikasi Dinas Luar & Izin
+    // Direct Status Update untuk Verifikasi Dinas Luar & Izin (Sinkron Real-Time ke Riwayat Presensi Guru)
     async function updateLeaveStatus(leaveId, newStatus) {
       const item = state.leaveRequests.find(l => l.id === leaveId);
       if (!item) return;
@@ -4065,19 +4176,62 @@
         } catch (e) {}
       }
 
-      // Sinkronkan juga status di attendances
-      const attItem = state.attendances.find(a => a.teacher_id === item.teacher_id && a.attendance_date === item.request_date);
+      // Tentukan status kehadiran yang dipetakan
+      let mappedStatus = 'Dinas Luar';
+      if (newStatus === 'Ditolak') {
+        mappedStatus = 'Ditolak';
+      } else {
+        if (item.request_type.includes('Sakit')) mappedStatus = 'Sakit';
+        else if (item.request_type.includes('WFA')) mappedStatus = 'WFA/H';
+        else if (item.request_type.includes('Izin')) mappedStatus = 'Izin';
+        else mappedStatus = 'Dinas Luar';
+      }
+
+      const notesText = `${item.request_type} (${newStatus === 'Ditolak' ? 'Ditolak Admin' : 'Disetujui Admin'}): ${item.description}`;
+
+      // Sinkronkan status di attendances agar terlihat setiap harinya di 'Riwayat Presensi' Guru
+      let attItem = state.attendances.find(a => a.teacher_id === item.teacher_id && a.attendance_date === item.request_date);
       if (attItem) {
+        attItem.status = mappedStatus;
+        attItem.notes = notesText;
         if (newStatus === 'Ditolak') {
-          attItem.status = 'Ditolak';
-          attItem.notes = `${item.request_type} ditolak oleh Admin`;
-        } else {
-          attItem.status = item.request_type.includes('Dinas') ? 'Dinas Luar' : 'Izin';
-          attItem.notes = `${item.request_type} disetujui Admin`;
+          attItem.work_duration = '-';
+        } else if (item.request_type.includes('WFA')) {
+          attItem.check_in_time = '07:30:00';
+          attItem.check_out_time = '16:00:00';
+          attItem.work_duration = '8j 30m';
+        } else if (item.request_type.includes('Dinas')) {
+          attItem.work_duration = item.duration_type === 'Full' ? '1 Hari Penuh' : 'Setengah Hari';
         }
+
         if (!IS_PREVIEW && supabase) {
           try {
-            await supabase.from('attendances').update({ status: attItem.status, notes: attItem.notes }).eq('id', attItem.id);
+            await supabase.from('attendances').update({
+              status: attItem.status,
+              notes: attItem.notes,
+              work_duration: attItem.work_duration
+            }).eq('id', attItem.id);
+          } catch (e) {}
+        }
+      } else {
+        // Jika belum ada catatan kehadiran pada tanggal tersebut, buatkan otomatis agar langsung muncul di Riwayat Presensi Guru!
+        const newAtt = {
+          id: 'att-sync-' + Date.now(),
+          teacher_id: item.teacher_id,
+          attendance_date: item.request_date,
+          check_in_time: (newStatus === 'Ditolak' || item.request_type.includes('Sakit') || item.request_type.includes('Izin')) ? null : '07:30:00',
+          check_out_time: (newStatus === 'Ditolak' || item.request_type.includes('Sakit') || item.request_type.includes('Izin')) ? null : '16:00:00',
+          work_duration: newStatus === 'Ditolak' ? '-' : (item.request_type.includes('WFA') ? '8j 30m' : (item.duration_type === 'Full' ? '1 Hari Penuh' : 'Setengah Hari')),
+          status: mappedStatus,
+          notes: notesText,
+          distance_meters: 0
+        };
+
+        state.attendances.unshift(newAtt);
+
+        if (!IS_PREVIEW && supabase) {
+          try {
+            await supabase.from('attendances').insert([newAtt]);
           } catch (e) {}
         }
       }
@@ -4086,7 +4240,7 @@
       renderGuruLeaveLists();
       renderGuruAttendanceList();
       renderAdminCharts();
-      showToast(`Pengajuan berhasil diperbarui: ${newStatus}`, newStatus === 'Diterima' ? 'success' : 'warning');
+      showToast(`Pengajuan ${item.request_type} berhasil ${newStatus.toLowerCase()} dan otomatis tersinkron ke Riwayat Presensi!`, newStatus === 'Diterima' ? 'success' : 'warning');
     }
 
     // Modal Edit Guru
@@ -4262,7 +4416,7 @@
       showToast('File Excel Rekap Presensi (.xlsx) berhasil diunduh.', 'success');
     }
 
-    // 2. Export Excel Dinas Luar & Izin
+    // 2. Export Excel Dinas Luar & Izin (Format Terbaru Real-Time)
     function exportLeavesExcel() {
       if (typeof XLSX === 'undefined') {
         showToast('Library Excel sedang dimuat, mohon coba sesaat lagi.', 'warning');
@@ -4275,16 +4429,17 @@
         ['REKAP PENGAJUAN DINAS LUAR & WFA/H / IZIN'],
         [`Tanggal Unduh: ${formatIndonesianFullDate(new Date())}`],
         [],
-        ['No', 'Tanggal Pengajuan', 'NIP/NUPTK', 'Nama Lengkap', 'Jenis Pengajuan', 'Durasi', 'Keterangan / Alasan', 'Status Verifikasi']
+        ['No', 'Tanggal Pengajuan', 'NIP/NUPTK', 'Nama Lengkap', 'Jabatan', 'Jenis Pengajuan', 'Durasi', 'Keterangan / Alasan', 'Status Verifikasi']
       ];
 
       state.leaveRequests.forEach((l, idx) => {
-        const t = state.teachers.find(x => x.id === l.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+        const t = state.teachers.find(x => x.id === l.teacher_id) || { full_name: 'Pegawai', nip: '-', position: 'Guru' };
         rowsData.push([
           idx + 1,
           l.request_date,
           t.nip,
           t.full_name,
+          t.position || 'Guru',
           l.request_type,
           l.duration_type || 'Full',
           l.description,
@@ -4295,13 +4450,13 @@
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(rowsData);
       ws['!cols'] = [
-        { wch: 5 }, { wch: 16 }, { wch: 22 }, { wch: 30 }, { wch: 20 },
-        { wch: 10 }, { wch: 45 }, { wch: 18 }
+        { wch: 5 }, { wch: 16 }, { wch: 22 }, { wch: 30 }, { wch: 18 }, { wch: 20 },
+        { wch: 12 }, { wch: 45 }, { wch: 18 }
       ];
 
       XLSX.utils.book_append_sheet(wb, ws, 'Dinas & Izin');
-      XLSX.writeFile(wb, `Dinas_Luar_dan_Izin_SMPN71_${getTodayISO()}.xlsx`);
-      showToast('File Excel Dinas Luar & Izin (.xlsx) berhasil diunduh.', 'success');
+      XLSX.writeFile(wb, `Rekap_Dinas_Luar_dan_Izin_SMPN71_${getTodayISO()}.xlsx`);
+      showToast('File Excel Rekap Dinas Luar & Izin (.xlsx) berhasil diunduh.', 'success');
     }
 
     function exportAttendanceCSV() {
@@ -4334,26 +4489,121 @@
       showToast('Laporan CSV berhasil diunduh.', 'success');
     }
 
-    // 3. Modal Cetak PDF Format A4 Sesuai Gambar Resmi Terlampir
+    // 3. Modal Cetak PDF Format A4 Sesuai Gambar Resmi Terlampir (Presensi & Dinas Luar)
     function openPrintA4Modal(type = 'attendance') {
       const modal = document.getElementById('modal-print-a4-preview');
       const printableArea = document.getElementById('printable-a4-area');
       if (!modal || !printableArea) return;
 
+      const todayDateStr = formatIndonesianFullDate(new Date());
+
+      // CETAK DOKUMEN REKAPITULASI DINAS LUAR & IZIN (FORMAT A4 RESMI)
+      if (type === 'leaves') {
+        let leaveRowsHtml = '';
+        if (!state.leaveRequests.length) {
+          leaveRowsHtml = `
+            <tr>
+              <td colspan="7" class="border border-black p-4 text-center text-slate-500 italic">Belum ada pengajuan dinas luar atau izin.</td>
+            </tr>
+          `;
+        } else {
+          leaveRowsHtml = state.leaveRequests.map((l, idx) => {
+            const t = state.teachers.find(x => x.id === l.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+            return `
+              <tr>
+                <td class="border border-black p-2 text-center font-mono text-xs">${idx + 1}</td>
+                <td class="border border-black p-2 text-center font-mono text-xs">${l.request_date}</td>
+                <td class="border border-black p-2 font-mono text-xs">${t.nip}</td>
+                <td class="border border-black p-2 font-bold text-xs uppercase">${t.full_name}</td>
+                <td class="border border-black p-2 text-xs font-semibold">${l.request_type} (${l.duration_type || 'Full'})</td>
+                <td class="border border-black p-2 text-xs">${l.description}</td>
+                <td class="border border-black p-2 text-center font-bold text-xs ${l.status === 'Diterima' ? 'text-emerald-700' : (l.status === 'Ditolak' ? 'text-rose-700' : 'text-amber-700')}">${l.status}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        printableArea.innerHTML = `
+          <!-- KOP SURAT PEMERINTAH KOTA BANDUNG -->
+          <div class="flex items-center gap-4 border-b-[3px] border-black pb-3">
+            <div class="w-20 h-20 shrink-0 flex items-center justify-center">
+              <svg class="w-18 h-18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 5 L88 22 L88 56 C88 78 50 95 50 95 C50 95 12 78 12 56 L12 22 Z" fill="#0284C7" stroke="#000" stroke-width="2"/>
+                <path d="M50 14 L80 27 L80 54 C80 72 50 86 50 86 C50 86 20 72 20 54 L20 27 Z" fill="#FACC15"/>
+                <circle cx="50" cy="45" r="16" fill="#FFFFFF" stroke="#000" stroke-width="1.5"/>
+                <text x="50" y="49" font-size="10" font-weight="900" text-anchor="middle" fill="#0F172A">71</text>
+                <rect x="18" y="72" width="64" height="11" rx="2" fill="#FACC15" stroke="#000" stroke-width="1.5"/>
+                <text x="50" y="80.5" font-size="7.5" font-weight="900" text-anchor="middle" fill="#000">KOTA BANDUNG</text>
+              </svg>
+            </div>
+            <div class="flex-1 text-center pr-4">
+              <h3 class="text-[15px] font-extrabold uppercase tracking-wide leading-tight text-black">Pemerintah Kota Bandung</h3>
+              <h2 class="text-[17px] font-extrabold uppercase tracking-wide leading-tight text-black">Dinas Pendidikan</h2>
+              <h1 class="text-[20px] font-black uppercase tracking-wider leading-tight text-black">SMP Negeri 71 Bandung</h1>
+              <p class="text-[10px] text-black mt-0.5 leading-snug">
+                Jl. Manglayang I No. 1, Palasari, Kec. Cibiru, Kota Bandung, Jawa Barat 40615
+              </p>
+              <p class="text-[10px] text-black leading-snug font-medium">
+                Email: smpn71bandung@gmail.com
+              </p>
+            </div>
+          </div>
+
+          <!-- JUDUL DOKUMEN -->
+          <div class="text-center my-6">
+            <h2 class="text-[18px] font-black tracking-wide underline uppercase text-black">Rekapitulasi Pengajuan Dinas Luar & Izin / WFA</h2>
+            <p class="text-xs text-black mt-1 font-medium">Dokumen Resmi • Tanggal Cetak: ${todayDateStr}</p>
+          </div>
+
+          <!-- TABEL DAFTAR PENGAJUAN RESMI -->
+          <table class="w-full border-collapse border border-black mb-8 text-black">
+            <thead>
+              <tr class="bg-slate-100 font-extrabold text-xs text-black">
+                <th class="border border-black p-2 text-center w-10">NO</th>
+                <th class="border border-black p-2 text-center w-24">TANGGAL</th>
+                <th class="border border-black p-2 text-center w-36">NIP/NUPTK</th>
+                <th class="border border-black p-2 text-center">NAMA LENGKAP</th>
+                <th class="border border-black p-2 text-center w-36">JENIS PENGAJUAN</th>
+                <th class="border border-black p-2 text-center">KETERANGAN / ALASAN</th>
+                <th class="border border-black p-2 text-center w-24">STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${leaveRowsHtml}
+            </tbody>
+          </table>
+
+          <!-- TANDA TANGAN KEPALA SEKOLAH -->
+          <div class="flex justify-end text-black text-xs font-medium pr-6 mt-8">
+            <div class="text-center min-w-[240px]">
+              <p class="leading-relaxed">Bandung, ${todayDateStr}</p>
+              <p class="leading-relaxed font-bold">Mengetahui,</p>
+              <p class="font-extrabold leading-relaxed">Kepala SMPN 71 Bandung</p>
+              <div class="h-20"></div>
+              <p class="font-black text-sm underline tracking-wide">Nur'aeni Puspitasari, S.S., M.Ak.</p>
+              <p class="text-[11px] font-mono font-bold">NIP / NUPTK. 198202102009022004</p>
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+        return;
+      }
+
+      // CETAK DOKUMEN REKAPITULASI PRESENSI PEGAWAI (DEFAULT)
       // Cari data pegawai yang dipilih dari filter laporan atau guru pertama
       let targetTeacher = null;
       if (state.reportFilterTeacher !== 'all') {
         targetTeacher = state.teachers.find(t => t.id === state.reportFilterTeacher);
       }
       if (!targetTeacher) {
-        // Ambil guru aktif atau Febby Febrianti (sesuai contoh gambar terlampir)
         targetTeacher = state.currentUser?.role === 'guru'
           ? state.currentUser
           : (state.teachers.find(t => t.nip === '1547777678230092') || state.teachers[0]);
       }
 
       const teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher?.id);
-      const todayDateStr = formatIndonesianFullDate(new Date());
 
       let rowsHtml = '';
       if (!teacherAttendances.length) {
@@ -4372,7 +4622,7 @@
           <tr>
             <td class="border border-black p-2 text-center font-mono text-xs">${a.attendance_date}</td>
             <td class="border border-black p-2 text-center font-bold font-mono text-xs">${a.check_in_time || '-'}</td>
-            <td class="border border-black p-2 text-center text-xs font-medium">${a.status === 'Terlambat' ? 'Terlambat' : 'Hadir'}</td>
+            <td class="border border-black p-2 text-center text-xs font-medium">${a.status}</td>
             <td class="border border-black p-2 text-center font-mono text-xs">${a.check_out_time || '-'}</td>
             <td class="border border-black p-2 text-center text-xs">${a.check_out_time ? 'Lengkap' : '-'}</td>
             <td class="border border-black p-2 text-center text-xs">${a.notes || 'Kampus Utama'}</td>
@@ -4459,7 +4709,7 @@
             <p class="font-extrabold leading-relaxed">Kepala SMPN 71 Bandung</p>
             <div class="h-20"></div>
             <p class="font-black text-sm underline tracking-wide">Nur'aeni Puspitasari, S.S., M.Ak.</p>
-            <p class="text-[11px] font-mono font-bold">NIP. 198202102009022004</p>
+            <p class="text-[11px] font-mono font-bold">NIP / NUPTK. 198202102009022004</p>
           </div>
         </div>
       `;
@@ -4576,13 +4826,36 @@
         document.getElementById('preview-banner')?.remove();
         await loadAllSupabaseData();
 
-        // Cek session aktif Admin Supabase Auth jika ada
+        // Cek session aktif Supabase Auth / Google OAuth jika ada
         if (supabase) {
           try {
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              state.currentUser = { role: 'admin', email: session.user.email };
-              openAdminDashboard();
+            if (session?.user) {
+              const uEmail = session.user.email;
+              const teacherMatch = state.teachers.find(t => t.email.toLowerCase() === uEmail?.toLowerCase());
+              if (teacherMatch) {
+                loginAsGuruUser(teacherMatch);
+                showToast(`Selamat datang, ${teacherMatch.full_name}! (Masuk via Google)`, 'success');
+              } else if (uEmail?.toLowerCase().includes('admin')) {
+                state.currentUser = { role: 'admin', email: uEmail };
+                openAdminDashboard();
+                showToast('Berhasil masuk sebagai Administrator via Akun Google.', 'success');
+              } else {
+                const autoTeacher = {
+                  id: 't-google-' + Date.now(),
+                  nip: '19' + Math.floor(10000000000000 + Math.random() * 90000000000000),
+                  email: uEmail,
+                  password: 'google-oauth',
+                  full_name: session.user.user_metadata?.full_name || uEmail.split('@')[0].toUpperCase(),
+                  position: 'Guru Pegawai',
+                  face_registered: false,
+                  face_photo_url: '',
+                  avatar_url: session.user.user_metadata?.avatar_url || ''
+                };
+                state.teachers.push(autoTeacher);
+                loginAsGuruUser(autoTeacher);
+                showToast(`Selamat datang, ${autoTeacher.full_name}! (Akun Google)`, 'success');
+              }
             }
           } catch (e) {}
         }
