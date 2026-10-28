@@ -2309,6 +2309,32 @@
       return now.toTimeString().split(' ')[0];
     }
 
+    // Helper Pencegah Data Presensi Ganda (1 Guru Hanya 1 Data per Tanggal)
+    function deduplicateAttendances(list) {
+      if (!Array.isArray(list)) return [];
+      const map = new Map();
+      for (const item of list) {
+        if (!item || !item.teacher_id || !item.attendance_date) continue;
+        const key = `${item.teacher_id}_${item.attendance_date}`;
+        if (!map.has(key)) {
+          map.set(key, { ...item });
+        } else {
+          // Gabungkan data agar lengkap jika salah satu memiliki jam masuk atau pulang
+          const existing = map.get(key);
+          if (!existing.check_in_time && item.check_in_time) existing.check_in_time = item.check_in_time;
+          if (!existing.check_out_time && item.check_out_time) existing.check_out_time = item.check_out_time;
+          if (existing.status === 'Pulang' && item.status !== 'Pulang') existing.status = item.status;
+          if ((!existing.work_duration || existing.work_duration === '-') && item.work_duration && item.work_duration !== '-') {
+            existing.work_duration = item.work_duration;
+          }
+          if ((!existing.notes || existing.notes === '1x presensi') && item.notes) {
+            existing.notes = item.notes;
+          }
+        }
+      }
+      return Array.from(map.values());
+    }
+
     // ====================================================
     // SINKRONISASI DATA SUPABASE
     // ====================================================
@@ -2349,12 +2375,12 @@
           .order('full_name', { ascending: true });
         state.teachers = tchData || [];
 
-        // 4. Ambil attendances
+        // 4. Ambil attendances (Deduplikasi otomatis agar tidak ada data ganda)
         const { data: attData } = await supabase
           .from('attendances')
           .select('*')
           .order('attendance_date', { ascending: false });
-        state.attendances = attData || [];
+        state.attendances = deduplicateAttendances(attData || []);
 
         // 5. Ambil leave_requests
         const { data: lvData } = await supabase
@@ -2385,8 +2411,8 @@
       const subtitleEl = document.getElementById('login-app-subtitle');
       const sideTitleEl = document.getElementById('admin-sidebar-title');
 
-      if (titleEl) titleEl.textContent = cfg.app_name || 'Gercep Asik';
-      if (subtitleEl) subtitleEl.textContent = cfg.app_subtitle || 'Masuk untuk melanjutkan ke layanan kepegawaian.';
+      if (titleEl) titleEl.textContent = cfg.app_name || 'SIHADIR SIGMA 71';
+      if (subtitleEl) subtitleEl.textContent = cfg.app_subtitle || 'Sistem Informasi Kehadiran PTK';
       if (sideTitleEl) sideTitleEl.textContent = cfg.app_name || 'SIHADIR SIGMA 71';
 
       const customLogo = document.getElementById('login-logo-custom');
@@ -2703,7 +2729,8 @@
 
       const container = document.getElementById('guru-attendance-list');
       const todayISO = getTodayISO();
-      const myAttendances = state.attendances.filter(a => a.teacher_id === user.id);
+      state.attendances = deduplicateAttendances(state.attendances);
+      const myAttendances = deduplicateAttendances(state.attendances.filter(a => a.teacher_id === user.id || a.teacher_id === user.nip));
       const todayRecord = myAttendances.find(a => a.attendance_date === todayISO);
 
       let html = '';
@@ -3416,8 +3443,10 @@
       return tempCanvas.toDataURL('image/jpeg', 0.88);
     }
 
-    // Eksekusi Presensi (Mendukung 2x Masuk & 2x Pulang dengan mengambil data terakhir)
+    // Eksekusi Presensi Biometrik Wajah & Pendaftaran Wajah (1 Guru Hanya 1 Kali Presensi per Tanggal, Bebas Duplikasi)
     async function handleCaptureBiometric() {
+      if (state.isCapturingBiometric) return;
+
       if (state.gpsValidation.checking) {
         showToast('Mohon tunggu validasi lokasi selesai.', 'warning');
         return;
@@ -3432,189 +3461,259 @@
       const user = state.currentUser;
       if (!user) return;
 
-      const snapshotDataUrl = captureFaceSnapshot();
+      state.isCapturingBiometric = true;
+      const btnCapture = document.getElementById('btn-capture-biometric');
+      if (btnCapture) {
+        btnCapture.disabled = true;
+        btnCapture.classList.add('opacity-70', 'cursor-not-allowed');
+      }
 
-      // Mode Pendaftaran Wajah (Foto langsung tersimpan dan tampil sebagai referensi muka & foto profil)
-      if (state.cameraMode === 'enroll') {
-        if (!IS_PREVIEW && supabase) {
-          try {
-            await supabase
-              .from('teachers')
-              .update({
+      try {
+        const snapshotDataUrl = captureFaceSnapshot();
+
+        // 1. MODE PENDAFTARAN WAJAH (Foto tersimpan & status langsung 'Sudah Rekam' di Admin & Profil)
+        if (state.cameraMode === 'enroll') {
+          if (!IS_PREVIEW && supabase) {
+            try {
+              await supabase
+                .from('teachers')
+                .update({
+                  face_registered: true,
+                  face_photo_url: snapshotDataUrl,
+                  avatar_url: snapshotDataUrl
+                })
+                .eq('id', user.id);
+            } catch (e) {
+              console.warn('Gagal sinkron pendaftaran wajah ke Supabase:', e);
+            }
+          }
+
+          // Sinkronkan ke objek pengguna aktif
+          state.currentUser.face_registered = true;
+          state.currentUser.face_photo_url = snapshotDataUrl;
+          state.currentUser.avatar_url = snapshotDataUrl;
+
+          // Sinkronkan ke daftar guru lokal
+          const tIdx = state.teachers.findIndex(t => t.id === user.id || t.nip === user.nip);
+          if (tIdx !== -1) {
+            state.teachers[tIdx].face_registered = true;
+            state.teachers[tIdx].face_photo_url = snapshotDataUrl;
+            state.teachers[tIdx].avatar_url = snapshotDataUrl;
+          }
+
+          closeCameraModal();
+          renderGuruHeaderAndButton();
+          populateGuruProfileForm();
+          renderAdminAllTables();
+          showToast('Wajah berhasil direkam! Status biometrik otomatis "Sudah Rekam" di admin dan profil.', 'success');
+          return;
+        }
+
+        // 2. MODE PRESENSI HARIAN (MASUK / PULANG) - HANYA 1 DATA PER HARI TIDAK AKAN DOUBLE
+        // Jika guru belum rekam wajah, otomatis sinkronkan foto presensi ini sebagai referensi muka
+        if (!user.face_registered) {
+          user.face_registered = true;
+          user.face_photo_url = snapshotDataUrl;
+          user.avatar_url = snapshotDataUrl;
+          const tIdx = state.teachers.findIndex(t => t.id === user.id || t.nip === user.nip);
+          if (tIdx !== -1) {
+            state.teachers[tIdx].face_registered = true;
+            state.teachers[tIdx].face_photo_url = snapshotDataUrl;
+            state.teachers[tIdx].avatar_url = snapshotDataUrl;
+          }
+          if (!IS_PREVIEW && supabase) {
+            try {
+              await supabase.from('teachers').update({
                 face_registered: true,
                 face_photo_url: snapshotDataUrl,
                 avatar_url: snapshotDataUrl
-              })
-              .eq('id', user.id);
-          } catch (e) {
-            console.warn('Gagal sinkron pendaftaran wajah ke Supabase:', e);
+              }).eq('id', user.id);
+            } catch (e) {}
           }
         }
 
-        // Sinkronkan ke objek pengguna aktif
-        state.currentUser.face_registered = true;
-        state.currentUser.face_photo_url = snapshotDataUrl;
-        state.currentUser.avatar_url = snapshotDataUrl;
+        const targetType = document.querySelector('input[name="target_attendance_type"]:checked')?.value || 'masuk';
+        const todayISO = getTodayISO();
+        const nowHMS = getCurrentTimeHMS();
+        const todaySchedule = getTodaySchedule();
 
-        // Sinkronkan ke daftar guru lokal
-        const tIdx = state.teachers.findIndex(t => t.id === user.id);
-        if (tIdx !== -1) {
-          state.teachers[tIdx].face_registered = true;
-          state.teachers[tIdx].face_photo_url = snapshotDataUrl;
-          state.teachers[tIdx].avatar_url = snapshotDataUrl;
-        }
+        // Cari apakah sudah ada data presensi hari ini untuk guru ini (HANYA 1 DATA)
+        let existing = state.attendances.find(
+          a => (a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO
+        );
 
-        closeCameraModal();
-        renderGuruHeaderAndButton();
-        populateGuruProfileForm();
-        renderAdminAllTables();
-        showToast('Foto wajah berhasil tersimpan sebagai referensi biometrik muka dan profil Anda!', 'success');
-        return;
-      }
+        if (targetType === 'masuk') {
+          const dynamicStatus = evaluateAttendanceStatus(nowHMS, todaySchedule);
 
-      // Mode Presensi Masuk / Pulang (Bisa 2x, diambil data terakhir)
-      const targetType = document.querySelector('input[name="target_attendance_type"]:checked')?.value || 'masuk';
-      const todayISO = getTodayISO();
-      const nowHMS = getCurrentTimeHMS();
-      const todaySchedule = getTodaySchedule();
+          if (existing) {
+            // Jika sudah ada data, UPDATE data yang ada (TIDAK MENAMBAH BARIS BARU)
+            existing.check_in_time = nowHMS;
+            existing.status = dynamicStatus;
+            existing.distance_meters = state.gpsValidation.distanceMeters;
+            existing.notes = 'Presensi Masuk';
+            if (existing.check_out_time) {
+              existing.work_duration = formatDuration(nowHMS, existing.check_out_time);
+              if (dynamicStatus !== 'Terlambat') existing.status = 'Lengkap';
+            }
 
-      let existing = state.attendances.find(
-        a => a.teacher_id === user.id && a.attendance_date === todayISO
-      );
+            if (!IS_PREVIEW && supabase) {
+              try {
+                await supabase.from('attendances').update({
+                  check_in_time: nowHMS,
+                  status: existing.status,
+                  work_duration: existing.work_duration,
+                  notes: existing.notes,
+                  distance_meters: existing.distance_meters
+                }).eq('id', existing.id);
+              } catch (e) {}
+            }
 
-      if (targetType === 'masuk') {
-        // Evaluasi keterlambatan berdasarkan settingan jadwal mingguan / libur
-        const dynamicStatus = evaluateAttendanceStatus(nowHMS, todaySchedule);
-
-        if (existing) {
-          // Update Presensi Masuk ke-2 (diambil data absen masuk terakhir)
-          existing.check_in_time = nowHMS;
-          existing.status = dynamicStatus;
-          existing.distance_meters = state.gpsValidation.distanceMeters;
-          existing.notes = 'Presensi Masuk (Diperbarui Terakhir)';
-          if (existing.check_out_time) {
-            existing.work_duration = formatDuration(nowHMS, existing.check_out_time);
-            if (dynamicStatus !== 'Terlambat') existing.status = 'Lengkap';
-          }
-
-          if (!IS_PREVIEW && supabase) {
-            await supabase.from('attendances').update({
+            state.attendances = deduplicateAttendances(state.attendances);
+            closeCameraModal();
+            renderGuruAttendanceList();
+            renderAdminAllTables();
+            renderAdminCharts();
+            showToast(`Presensi Masuk diperbarui pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
+          } else {
+            // Presensi Masuk Baru (Hanya 1 kali insert)
+            const newRec = {
+              id: 'att-' + Date.now(),
+              teacher_id: user.id,
+              attendance_date: todayISO,
               check_in_time: nowHMS,
-              status: existing.status,
-              work_duration: existing.work_duration,
-              notes: existing.notes,
-              distance_meters: existing.distance_meters
-            }).eq('id', existing.id);
-          }
+              check_out_time: null,
+              work_duration: 'Sedang bertugas',
+              status: dynamicStatus,
+              notes: 'Presensi Masuk',
+              lat_in: state.gpsValidation.userLat,
+              lng_in: state.gpsValidation.userLng,
+              distance_meters: state.gpsValidation.distanceMeters,
+              face_score: 98.6
+            };
 
-          closeCameraModal();
-          renderGuruAttendanceList();
-          renderAdminAllTables();
-          renderAdminCharts();
-          showToast(`Presensi Masuk diperbarui pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
-        } else {
-          // Presensi Masuk Pertama
-          const newRec = {
-            id: 'att-' + Date.now(),
-            teacher_id: user.id,
-            attendance_date: todayISO,
-            check_in_time: nowHMS,
-            check_out_time: null,
-            work_duration: 'Sedang bertugas',
-            status: dynamicStatus,
-            notes: 'Presensi Masuk',
-            lat_in: state.gpsValidation.userLat,
-            lng_in: state.gpsValidation.userLng,
-            distance_meters: state.gpsValidation.distanceMeters,
-            face_score: 98.6
-          };
+            if (!IS_PREVIEW && supabase) {
+              try {
+                // Cek sekali lagi di Supabase untuk mencegah double insert karena jaringan
+                const { data: dbCheck } = await supabase
+                  .from('attendances')
+                  .select('id')
+                  .eq('teacher_id', user.id)
+                  .eq('attendance_date', todayISO)
+                  .maybeSingle();
 
-          if (!IS_PREVIEW && supabase) {
-            const { data } = await supabase.from('attendances').insert([{
-              teacher_id: newRec.teacher_id,
-              attendance_date: newRec.attendance_date,
-              check_in_time: newRec.check_in_time,
-              status: newRec.status,
-              notes: newRec.notes,
-              lat_in: newRec.lat_in,
-              lng_in: newRec.lng_in,
-              distance_meters: newRec.distance_meters,
-              face_score: newRec.face_score
-            }]).select().single();
-            if (data) state.attendances.unshift(data);
-            else state.attendances.unshift(newRec);
-          } else {
+                if (dbCheck) {
+                  await supabase.from('attendances').update({
+                    check_in_time: nowHMS,
+                    status: dynamicStatus,
+                    notes: 'Presensi Masuk',
+                    distance_meters: state.gpsValidation.distanceMeters
+                  }).eq('id', dbCheck.id);
+                  newRec.id = dbCheck.id;
+                } else {
+                  const { data: inserted } = await supabase.from('attendances').insert([newRec]).select().single();
+                  if (inserted) newRec.id = inserted.id;
+                }
+              } catch (e) {
+                console.warn('Simpan presensi masuk supabase error:', e);
+              }
+            }
+
+            // Hapus duplikat lokal jika ada, lalu masukkan data terbaru
+            state.attendances = state.attendances.filter(a => !( (a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
             state.attendances.unshift(newRec);
+            state.attendances = deduplicateAttendances(state.attendances);
+
+            closeCameraModal();
+            renderGuruAttendanceList();
+            renderAdminAllTables();
+            renderAdminCharts();
+            showToast(`Presensi Masuk berhasil dicatat pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
           }
+        } else {
+          // Presensi Pulang (HANYA 1 DATA PER HARI)
+          if (existing) {
+            const checkInRef = existing.check_in_time || '07:30:00';
+            const duration = formatDuration(checkInRef, nowHMS);
+            const finalStatus = existing.status === 'Terlambat' ? 'Terlambat' : 'Lengkap';
 
-          closeCameraModal();
-          renderGuruAttendanceList();
-          renderAdminAllTables();
-          renderAdminCharts();
-          showToast(`Presensi Masuk berhasil dicatat pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
-        }
-      } else {
-        // Presensi Pulang (Bisa 2x, diambil data absen pulang terakhir)
-        if (existing) {
-          const checkInRef = existing.check_in_time || '07:30:00';
-          const duration = formatDuration(checkInRef, nowHMS);
-          const finalStatus = existing.status === 'Terlambat' ? 'Terlambat' : 'Lengkap';
+            existing.check_out_time = nowHMS;
+            existing.work_duration = duration;
+            existing.status = finalStatus;
+            existing.notes = 'Presensi Pulang';
 
-          existing.check_out_time = nowHMS;
-          existing.work_duration = duration;
-          existing.status = finalStatus;
-          existing.notes = 'Presensi Pulang (Diperbarui Terakhir)';
+            if (!IS_PREVIEW && supabase) {
+              try {
+                await supabase.from('attendances').update({
+                  check_out_time: nowHMS,
+                  work_duration: duration,
+                  status: finalStatus,
+                  notes: existing.notes
+                }).eq('id', existing.id);
+              } catch (e) {}
+            }
 
-          if (!IS_PREVIEW && supabase) {
-            await supabase.from('attendances').update({
+            state.attendances = deduplicateAttendances(state.attendances);
+            closeCameraModal();
+            renderGuruAttendanceList();
+            renderAdminAllTables();
+            renderAdminCharts();
+            showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}! Durasi kerja: ${duration}`, 'success');
+          } else {
+            // Guru langsung absen pulang tanpa absen masuk sebelumnya
+            const newRec = {
+              id: 'att-' + Date.now(),
+              teacher_id: user.id,
+              attendance_date: todayISO,
+              check_in_time: null,
               check_out_time: nowHMS,
-              work_duration: duration,
-              status: finalStatus,
-              notes: existing.notes
-            }).eq('id', existing.id);
-          }
+              work_duration: '-',
+              status: 'Pulang',
+              notes: 'Hanya Presensi Pulang',
+              lat_in: state.gpsValidation.userLat,
+              lng_in: state.gpsValidation.userLng,
+              distance_meters: state.gpsValidation.distanceMeters,
+              face_score: 98.6
+            };
 
-          closeCameraModal();
-          renderGuruAttendanceList();
-          renderAdminAllTables();
-          renderAdminCharts();
-          showToast(`Presensi Pulang diperbarui pukul ${nowHMS}! Total durasi kerja: ${duration}`, 'success');
-        } else {
-          // Guru langsung absen pulang tanpa absen masuk
-          const newRec = {
-            id: 'att-' + Date.now(),
-            teacher_id: user.id,
-            attendance_date: todayISO,
-            check_in_time: null,
-            check_out_time: nowHMS,
-            work_duration: '-',
-            status: 'Pulang',
-            notes: 'Hanya Presensi Pulang',
-            distance_meters: state.gpsValidation.distanceMeters,
-            face_score: 98.6
-          };
+            if (!IS_PREVIEW && supabase) {
+              try {
+                const { data: dbCheck } = await supabase
+                  .from('attendances')
+                  .select('id')
+                  .eq('teacher_id', user.id)
+                  .eq('attendance_date', todayISO)
+                  .maybeSingle();
 
-          if (!IS_PREVIEW && supabase) {
-            const { data } = await supabase.from('attendances').insert([{
-              teacher_id: newRec.teacher_id,
-              attendance_date: newRec.attendance_date,
-              check_out_time: newRec.check_out_time,
-              status: newRec.status,
-              notes: newRec.notes,
-              distance_meters: newRec.distance_meters,
-              face_score: newRec.face_score
-            }]).select().single();
-            if (data) state.attendances.unshift(data);
-            else state.attendances.unshift(newRec);
-          } else {
+                if (dbCheck) {
+                  await supabase.from('attendances').update({
+                    check_out_time: nowHMS,
+                    status: 'Pulang',
+                    notes: 'Hanya Presensi Pulang'
+                  }).eq('id', dbCheck.id);
+                  newRec.id = dbCheck.id;
+                } else {
+                  const { data: inserted } = await supabase.from('attendances').insert([newRec]).select().single();
+                  if (inserted) newRec.id = inserted.id;
+                }
+              } catch (e) {}
+            }
+
+            state.attendances = state.attendances.filter(a => !( (a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
             state.attendances.unshift(newRec);
-          }
+            state.attendances = deduplicateAttendances(state.attendances);
 
-          closeCameraModal();
-          renderGuruAttendanceList();
-          renderAdminAllTables();
-          renderAdminCharts();
-          showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}`, 'success');
+            closeCameraModal();
+            renderGuruAttendanceList();
+            renderAdminAllTables();
+            renderAdminCharts();
+            showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}`, 'success');
+          }
+        }
+      } finally {
+        state.isCapturingBiometric = false;
+        if (btnCapture) {
+          btnCapture.disabled = false;
+          btnCapture.classList.remove('opacity-70', 'cursor-not-allowed');
         }
       }
     }
@@ -4183,6 +4282,8 @@
         }
       }
 
+      state.attendances = deduplicateAttendances(state.attendances);
+
       // 2. SINKRONISASI KE DINAS LUAR & WFA/H & IZIN (Jika status khusus)
       if (['Dinas Luar', 'WFA/H', 'Sakit', 'Izin'].includes(statusVal)) {
         let reqType = statusVal;
@@ -4533,11 +4634,12 @@
       // 1. Tabel Monitoring Presensi
       const monTbody = document.getElementById('admin-monitoring-tbody');
       if (monTbody) {
+        state.attendances = deduplicateAttendances(state.attendances);
         if (!state.attendances.length) {
           monTbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada data presensi tercatat.</td></tr>`;
         } else {
           monTbody.innerHTML = state.attendances.map(a => {
-            const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+            const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
             const isLate = a.status === 'Terlambat';
             const badgeClass = isLate
               ? 'bg-amber-100 text-amber-800'
@@ -4572,33 +4674,48 @@
         if (!state.teachers.length) {
           tchTbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada data guru.</td></tr>`;
         } else {
-          tchTbody.innerHTML = state.teachers.map(t => `
-            <tr>
-              <td class="py-3 px-3 font-bold text-slate-900 uppercase">${t.full_name}</td>
-              <td class="py-3 px-3">
-                <div class="font-mono text-slate-700 font-semibold">${t.nip}</div>
-                <div class="text-[11px] text-slate-400">${t.email}</div>
-              </td>
-              <td class="py-3 px-3 text-slate-600">${t.position || '-'}</td>
-              <td class="py-3 px-3">
-                ${t.face_registered
-                  ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700"><i data-lucide="check" class="w-3 h-3"></i> Terdaftar</span>`
-                  : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">Belum Rekam</span>`
-                }
-              </td>
-              <td class="py-3 px-3 text-right space-x-1">
-                <button onclick="window.app.resetTeacherFace('${t.id}')" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[11px]">
-                  Reset Wajah
-                </button>
-                <button onclick="window.app.openTeacherModal('${t.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">
-                  Edit
-                </button>
-                <button onclick="window.app.deleteTeacher('${t.id}')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px]">
-                  Hapus
-                </button>
-              </td>
-            </tr>
-          `).join('');
+          tchTbody.innerHTML = state.teachers.map(t => {
+            const hasFace = Boolean(t.face_registered || (t.face_photo_url && t.face_photo_url.length > 30));
+            const facePhoto = t.face_photo_url || t.avatar_url || '';
+            return `
+              <tr>
+                <td class="py-3 px-3">
+                  <div class="flex items-center gap-2.5">
+                    ${facePhoto
+                      ? `<img src="${facePhoto}" class="w-9 h-9 rounded-full object-cover border-2 border-emerald-500 shadow-sm shrink-0" alt="Foto Wajah" />`
+                      : `<div class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 font-extrabold text-xs flex items-center justify-center shrink-0 border border-slate-300">${t.full_name ? t.full_name.charAt(0) : 'G'}</div>`
+                    }
+                    <div>
+                      <div class="font-bold text-slate-900 uppercase">${t.full_name}</div>
+                      <div class="text-[11px] text-slate-400 font-mono">${t.nip}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-3">
+                  <div class="font-mono text-slate-700 font-semibold">${t.nip}</div>
+                  <div class="text-[11px] text-slate-400">${t.email}</div>
+                </td>
+                <td class="py-3 px-3 text-slate-600 font-medium">${t.position || 'Guru Pegawai'}</td>
+                <td class="py-3 px-3">
+                  ${hasFace
+                    ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Sudah Rekam</span>`
+                    : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-sm"><i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i> Belum Rekam</span>`
+                  }
+                </td>
+                <td class="py-3 px-3 text-right space-x-1 whitespace-nowrap">
+                  <button onclick="window.app.resetTeacherFace('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[11px] transition">
+                    Reset Wajah
+                  </button>
+                  <button onclick="window.app.openTeacherModal('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
+                    Edit
+                  </button>
+                  <button onclick="window.app.deleteTeacher('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] transition">
+                    Hapus
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
         }
       }
 
@@ -4665,11 +4782,13 @@
       const fTeacher = state.reportFilterTeacher;
       const fMonth = state.reportFilterMonth;
 
+      state.attendances = deduplicateAttendances(state.attendances);
+
       let list = state.attendances;
       if (fTeacher !== 'all') {
         list = list.filter(a => a.teacher_id === fTeacher);
       }
-      if (fMonth !== 'all') {
+      if (fMonth !== 'all' && fMonth) {
         list = list.filter(a => a.attendance_date.startsWith(fMonth));
       }
 
@@ -4924,11 +5043,12 @@
         ['No', 'Tanggal', 'NIP/NUPTK', 'Nama Lengkap', 'Jabatan', 'Jam Masuk', 'Status Masuk', 'Jam Pulang', 'Status Pulang', 'Durasi Kerja', 'Status Kehadiran', 'Lokasi Tugas / Catatan']
       ];
 
+      state.attendances = deduplicateAttendances(state.attendances);
       let list = state.attendances;
       if (state.reportFilterTeacher !== 'all') {
         list = list.filter(a => a.teacher_id === state.reportFilterTeacher);
       }
-      if (state.reportFilterMonth !== 'all') {
+      if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
         list = list.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
       }
 
@@ -5009,9 +5129,13 @@
     }
 
     function exportAttendanceCSV() {
+      state.attendances = deduplicateAttendances(state.attendances);
       let list = state.attendances;
       if (state.reportFilterTeacher !== 'all') {
         list = list.filter(a => a.teacher_id === state.reportFilterTeacher);
+      }
+      if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
+        list = list.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
       }
       const headers = ['Tanggal', 'NIP/NUPTK', 'Nama Lengkap', 'Jam Masuk', 'Jam Pulang', 'Durasi Kerja', 'Status'];
       const rows = list.map(a => {
@@ -5171,125 +5295,246 @@
         return;
       }
 
-      // CETAK DOKUMEN REKAPITULASI PRESENSI PEGAWAI (DEFAULT)
-      // Cari data pegawai yang dipilih dari filter laporan rekapitulasi atau guru aktif
-      let targetTeacher = null;
-      if (state.reportFilterTeacher !== 'all') {
-        targetTeacher = state.teachers.find(t => t.id === state.reportFilterTeacher);
-      }
-      if (!targetTeacher) {
-        targetTeacher = state.currentUser?.role === 'guru'
-          ? state.currentUser
-          : (state.teachers[0] || null);
-      }
+      // CETAK DOKUMEN REKAPITULASI PRESENSI PEGAWAI (REAL-TIME SINKRON)
+      // Baca filter terkini dari elemen UI laporan
+      const filterTchEl = document.getElementById('report-filter-teacher');
+      const filterMthEl = document.getElementById('report-filter-month');
+      if (filterTchEl) state.reportFilterTeacher = filterTchEl.value;
+      if (filterMthEl) state.reportFilterMonth = filterMthEl.value || 'all';
 
-      let teacherAttendances = [];
-      if (targetTeacher) {
-        teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher.id);
-        if (state.reportFilterMonth !== 'all') {
-          teacherAttendances = teacherAttendances.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
+      // Pastikan data attendances ter-deduplikasi
+      state.attendances = deduplicateAttendances(state.attendances);
+
+      const isAllTeachers = (state.reportFilterTeacher === 'all' && state.currentUser?.role !== 'guru');
+
+      if (isAllTeachers) {
+        // 1. FORMAT REKAPITULASI SELURUH PEGAWAI (SEMUA PEGAWAI)
+        let list = [...state.attendances];
+        if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
+          list = list.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
         }
-      }
 
-      let rowsHtml = '';
-      if (!teacherAttendances.length) {
-        // Kosongkan dari data dummy sebelumnya; data tampil real-time sesuai rekapan
-        rowsHtml = `
-          <tr>
-            <td colspan="6" class="border border-black p-6 text-center text-slate-500 italic">
-              Belum ada riwayat kehadiran tercatat untuk filter ini. Data presensi akan otomatis masuk dan tampil real-time saat presensi dilakukan atau diinput manual.
-            </td>
-          </tr>
+        let rowsHtml = '';
+        if (!list.length) {
+          rowsHtml = `
+            <tr>
+              <td colspan="8" class="border border-black p-6 text-center text-slate-500 italic">
+                Belum ada data presensi tercatat untuk periode ini. Data presensi akan otomatis masuk dan tampil secara real-time saat presensi dilakukan guru atau diinput manual oleh admin.
+              </td>
+            </tr>
+          `;
+        } else {
+          rowsHtml = list.map((a, idx) => {
+            const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id) || { full_name: 'Guru Pegawai', nip: '-' };
+            return `
+              <tr>
+                <td class="border border-black p-2 text-center font-mono text-xs">${idx + 1}</td>
+                <td class="border border-black p-2 text-center font-mono text-xs">${a.attendance_date}</td>
+                <td class="border border-black p-2 font-mono text-xs font-semibold">${t.nip}</td>
+                <td class="border border-black p-2 font-bold text-xs uppercase">${t.full_name}</td>
+                <td class="border border-black p-2 text-center font-bold font-mono text-xs">${a.check_in_time || '-'}</td>
+                <td class="border border-black p-2 text-center font-mono text-xs">${a.check_out_time || '-'}</td>
+                <td class="border border-black p-2 text-center text-xs font-bold ${a.status === 'Terlambat' ? 'text-amber-700' : 'text-emerald-700'}">${a.status}</td>
+                <td class="border border-black p-2 text-xs">${a.notes || a.work_duration || 'Kampus Utama'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        printableArea.innerHTML = `
+          <!-- KOP SURAT PEMERINTAH KOTA BANDUNG DENGAN LOGO RESMI GAMBAR 2 -->
+          <div class="flex items-center gap-4 border-b-[3px] border-black pb-3">
+            <div class="w-20 h-24 shrink-0 flex items-center justify-center">
+              ${getBandungCityLogoSVG()}
+            </div>
+            <div class="flex-1 text-center pr-4 leading-snug">
+              <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">PEMERINTAH KOTA BANDUNG</h3>
+              <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">DINAS PENDIDIKAN</h3>
+              <h2 class="text-xl sm:text-2xl font-black tracking-wider uppercase text-black mt-0.5">SMP NEGERI 71 BANDUNG</h2>
+              <p class="text-[11px] text-black mt-1">
+                Jl. Manglayang I No. 1, Palasari, Kec. Cibiru, Kota Bandung, Jawa Barat 40615
+              </p>
+              <p class="text-[11px] text-black font-medium">
+                Email: smpn71bandung@gmail.com
+              </p>
+            </div>
+          </div>
+
+          <!-- JUDUL DOKUMEN -->
+          <div class="text-center my-6">
+            <h2 class="text-[18px] font-black tracking-wide underline uppercase text-black">LAPORAN REKAPITULASI PRESENSI KEHADIRAN PEGAWAI</h2>
+            <p class="text-xs text-black mt-1 font-bold">Tahun Ajaran 2026/2027</p>
+          </div>
+
+          <!-- KOTAK INFORMASI REKAPITULASI REAL-TIME -->
+          <div class="border-[1.5px] border-slate-300 rounded-xl p-3.5 mb-6 text-xs text-black">
+            <div class="grid grid-cols-2 gap-y-2">
+              <div>
+                <span class="font-extrabold text-black">Unit Kerja :</span>
+                <span class="font-bold ml-1">SMP Negeri 71 Bandung</span>
+              </div>
+              <div>
+                <span class="font-extrabold text-black">Tahun Ajaran :</span>
+                <span class="font-bold ml-1">2026/2027</span>
+              </div>
+              <div>
+                <span class="font-extrabold text-black">Filter Rekapitulasi :</span>
+                <span class="font-bold ml-1">Semua Guru & Pegawai</span>
+              </div>
+              <div>
+                <span class="font-extrabold text-black">Total Kehadiran Tercatat :</span>
+                <span class="font-bold ml-1 font-mono">${list.length} Data Real-Time</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABEL KEHADIRAN RESMI REAL-TIME -->
+          <table class="w-full border-collapse border border-black mb-12 text-black">
+            <thead>
+              <tr class="bg-slate-100 font-extrabold text-xs text-black">
+                <th class="border border-black p-2 text-center w-10">NO</th>
+                <th class="border border-black p-2 text-center w-24">TANGGAL</th>
+                <th class="border border-black p-2 text-center w-36">NIP/NUPTK</th>
+                <th class="border border-black p-2 text-center">NAMA LENGKAP</th>
+                <th class="border border-black p-2 text-center w-24">JAM MASUK</th>
+                <th class="border border-black p-2 text-center w-24">JAM PULANG</th>
+                <th class="border border-black p-2 text-center w-24">STATUS</th>
+                <th class="border border-black p-2 text-center">KETERANGAN / LOKASI</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <!-- TANDA TANGAN KEPALA SEKOLAH -->
+          <div class="flex justify-end text-black text-xs font-medium pr-6 mt-8">
+            <div class="text-center min-w-[240px]">
+              <p class="leading-relaxed">Bandung, ${todayDateStr}</p>
+              <p class="leading-relaxed font-bold">Mengetahui,</p>
+              <p class="font-extrabold leading-relaxed">Kepala SMPN 71 Bandung</p>
+              <div class="h-20"></div>
+              <p class="font-black text-sm underline tracking-wide">Nur'aeni Puspitasari, S.S., M.Ak.</p>
+              <p class="text-[11px] font-mono font-bold">NIP / NUPTK. 198202102009022004</p>
+            </div>
+          </div>
         `;
       } else {
-        rowsHtml = teacherAttendances.map(a => `
-          <tr>
-            <td class="border border-black p-2 text-center font-mono text-xs">${a.attendance_date}</td>
-            <td class="border border-black p-2 text-center font-bold font-mono text-xs">${a.check_in_time || '-'}</td>
-            <td class="border border-black p-2 text-center text-xs font-medium">${a.status}</td>
-            <td class="border border-black p-2 text-center font-mono text-xs">${a.check_out_time || '-'}</td>
-            <td class="border border-black p-2 text-center text-xs">${a.check_out_time ? 'Lengkap' : '-'}</td>
-            <td class="border border-black p-2 text-center text-xs">${a.notes || 'Kampus Utama'}</td>
-          </tr>
-        `).join('');
-      }
+        // 2. FORMAT LEMBAR REKAPITULASI INDIVIDUAL PER-PEGAWAI
+        let targetTeacher = state.teachers.find(t => t.id === state.reportFilterTeacher);
+        if (!targetTeacher && state.currentUser?.role === 'guru') {
+          targetTeacher = state.currentUser;
+        }
+        if (!targetTeacher) {
+          targetTeacher = state.teachers[0] || { full_name: 'Pegawai', nip: '-', position: 'Guru Pegawai' };
+        }
 
-      printableArea.innerHTML = `
-        <!-- KOP SURAT PEMERINTAH KOTA BANDUNG DENGAN LOGO RESMI GAMBAR 2 -->
-        <div class="flex items-center gap-4 border-b-[3px] border-black pb-3">
-          <div class="w-20 h-24 shrink-0 flex items-center justify-center">
-            ${getBandungCityLogoSVG()}
-          </div>
-          <div class="flex-1 text-center pr-4 leading-snug">
-            <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">PEMERINTAH KOTA BANDUNG</h3>
-            <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">DINAS PENDIDIKAN</h3>
-            <h2 class="text-xl sm:text-2xl font-black tracking-wider uppercase text-black mt-0.5">SMP NEGERI 71 BANDUNG</h2>
-            <p class="text-[11px] text-black mt-1">
-              Jl. Manglayang I No. 1, Palasari, Kec. Cibiru, Kota Bandung, Jawa Barat 40615
-            </p>
-            <p class="text-[11px] text-black font-medium">
-              Email: smpn71bandung@gmail.com
-            </p>
-          </div>
-        </div>
+        let teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher.id || a.teacher_id === targetTeacher.nip);
+        if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
+          teacherAttendances = teacherAttendances.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
+        }
 
-        <!-- JUDUL DOKUMEN -->
-        <div class="text-center my-6">
-          <h2 class="text-[18px] font-black tracking-wide underline uppercase text-black">Riwayat Kehadiran Pegawai</h2>
-          <p class="text-xs text-black mt-1 font-bold">Tahun Ajaran 2026/2027</p>
-        </div>
-
-        <!-- KOTAK DATA PEGAWAI (REAL-TIME SESUAI FILTER REKAPITULASI) -->
-        <div class="border-[1.5px] border-slate-300 rounded-xl p-3.5 mb-6 text-xs text-black">
-          <div class="grid grid-cols-2 gap-y-2">
-            <div>
-              <span class="font-extrabold text-black">Nama Lengkap :</span>
-              <span class="font-bold ml-1">${targetTeacher ? targetTeacher.full_name : '-'}</span>
-            </div>
-            <div>
-              <span class="font-extrabold text-black">Jabatan :</span>
-              <span class="font-medium ml-1">${targetTeacher ? (targetTeacher.position || 'Guru') : '-'}</span>
-            </div>
-            <div>
-              <span class="font-extrabold text-black">NIP / NUPTK :</span>
-              <span class="font-mono font-bold ml-1">${targetTeacher ? targetTeacher.nip : '-'}</span>
-            </div>
-            <div>
-              <span class="font-extrabold text-black">Unit Kerja :</span>
-              <span class="font-medium ml-1">SMP Negeri 71 Bandung</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- TABEL KEHADIRAN RESMI (REAL-TIME TANPA DATA DUMMY BAWAAN) -->
-        <table class="w-full border-collapse border border-black mb-12 text-black">
-          <thead>
-            <tr class="bg-slate-100 font-extrabold text-xs text-black">
-              <th class="border border-black p-2 text-center w-28">TANGGAL</th>
-              <th class="border border-black p-2 text-center w-28">JAM MASUK</th>
-              <th class="border border-black p-2 text-center w-24">STATUS</th>
-              <th class="border border-black p-2 text-center w-28">JAM PULANG</th>
-              <th class="border border-black p-2 text-center w-24">STATUS</th>
-              <th class="border border-black p-2 text-center">LOKASI TUGAS</th>
+        let rowsHtml = '';
+        if (!teacherAttendances.length) {
+          rowsHtml = `
+            <tr>
+              <td colspan="7" class="border border-black p-6 text-center text-slate-500 italic">
+                Belum ada riwayat kehadiran tercatat untuk ${targetTeacher.full_name}. Data presensi akan otomatis masuk dan tampil real-time saat presensi dilakukan atau diinput manual.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
+          `;
+        } else {
+          rowsHtml = teacherAttendances.map((a, idx) => `
+            <tr>
+              <td class="border border-black p-2 text-center font-mono text-xs">${idx + 1}</td>
+              <td class="border border-black p-2 text-center font-mono text-xs">${a.attendance_date}</td>
+              <td class="border border-black p-2 text-center font-bold font-mono text-xs">${a.check_in_time || '-'}</td>
+              <td class="border border-black p-2 text-center font-mono text-xs">${a.check_out_time || '-'}</td>
+              <td class="border border-black p-2 text-center text-xs font-semibold">${a.work_duration || '-'}</td>
+              <td class="border border-black p-2 text-center text-xs font-bold ${a.status === 'Terlambat' ? 'text-amber-700' : 'text-emerald-700'}">${a.status}</td>
+              <td class="border border-black p-2 text-xs">${a.notes || 'Kampus Utama'}</td>
+            </tr>
+          `).join('');
+        }
 
-        <!-- TANDA TANGAN KEPALA SEKOLAH -->
-        <div class="flex justify-end text-black text-xs font-medium pr-6 mt-8">
-          <div class="text-center min-w-[240px]">
-            <p class="leading-relaxed">Bandung, ${todayDateStr}</p>
-            <p class="leading-relaxed font-bold">Mengetahui,</p>
-            <p class="font-extrabold leading-relaxed">Kepala SMPN 71 Bandung</p>
-            <div class="h-20"></div>
-            <p class="font-black text-sm underline tracking-wide">Nur'aeni Puspitasari, S.S., M.Ak.</p>
-            <p class="text-[11px] font-mono font-bold">NIP / NUPTK. 198202102009022004</p>
+        printableArea.innerHTML = `
+          <!-- KOP SURAT PEMERINTAH KOTA BANDUNG DENGAN LOGO RESMI GAMBAR 2 -->
+          <div class="flex items-center gap-4 border-b-[3px] border-black pb-3">
+            <div class="w-20 h-24 shrink-0 flex items-center justify-center">
+              ${getBandungCityLogoSVG()}
+            </div>
+            <div class="flex-1 text-center pr-4 leading-snug">
+              <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">PEMERINTAH KOTA BANDUNG</h3>
+              <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">DINAS PENDIDIKAN</h3>
+              <h2 class="text-xl sm:text-2xl font-black tracking-wider uppercase text-black mt-0.5">SMP NEGERI 71 BANDUNG</h2>
+              <p class="text-[11px] text-black mt-1">
+                Jl. Manglayang I No. 1, Palasari, Kec. Cibiru, Kota Bandung, Jawa Barat 40615
+              </p>
+              <p class="text-[11px] text-black font-medium">
+                Email: smpn71bandung@gmail.com
+              </p>
+            </div>
           </div>
-        </div>
-      `;
+
+          <!-- JUDUL DOKUMEN -->
+          <div class="text-center my-6">
+            <h2 class="text-[18px] font-black tracking-wide underline uppercase text-black">LEMBAR REKAPITULASI KEHADIRAN PEGAWAI</h2>
+            <p class="text-xs text-black mt-1 font-bold">Tahun Ajaran 2026/2027</p>
+          </div>
+
+          <!-- KOTAK DATA PEGAWAI (REAL-TIME SESUAI FILTER REKAPITULASI) -->
+          <div class="border-[1.5px] border-slate-300 rounded-xl p-3.5 mb-6 text-xs text-black">
+            <div class="grid grid-cols-2 gap-y-2">
+              <div>
+                <span class="font-extrabold text-black">Nama Lengkap :</span>
+                <span class="font-bold ml-1">${targetTeacher ? targetTeacher.full_name : '-'}</span>
+              </div>
+              <div>
+                <span class="font-extrabold text-black">Jabatan :</span>
+                <span class="font-medium ml-1">${targetTeacher ? (targetTeacher.position || 'Guru') : '-'}</span>
+              </div>
+              <div>
+                <span class="font-extrabold text-black">NIP / NUPTK :</span>
+                <span class="font-mono font-bold ml-1">${targetTeacher ? targetTeacher.nip : '-'}</span>
+              </div>
+              <div>
+                <span class="font-extrabold text-black">Unit Kerja :</span>
+                <span class="font-medium ml-1">SMP Negeri 71 Bandung</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABEL KEHADIRAN RESMI REAL-TIME -->
+          <table class="w-full border-collapse border border-black mb-12 text-black">
+            <thead>
+              <tr class="bg-slate-100 font-extrabold text-xs text-black">
+                <th class="border border-black p-2 text-center w-10">NO</th>
+                <th class="border border-black p-2 text-center w-24">TANGGAL</th>
+                <th class="border border-black p-2 text-center w-28">JAM MASUK</th>
+                <th class="border border-black p-2 text-center w-28">JAM PULANG</th>
+                <th class="border border-black p-2 text-center w-24">DURASI</th>
+                <th class="border border-black p-2 text-center w-24">STATUS</th>
+                <th class="border border-black p-2 text-center">LOKASI / CATATAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <!-- TANDA TANGAN KEPALA SEKOLAH -->
+          <div class="flex justify-end text-black text-xs font-medium pr-6 mt-8">
+            <div class="text-center min-w-[240px]">
+              <p class="leading-relaxed">Bandung, ${todayDateStr}</p>
+              <p class="leading-relaxed font-bold">Mengetahui,</p>
+              <p class="font-extrabold leading-relaxed">Kepala SMPN 71 Bandung</p>
+              <div class="h-20"></div>
+              <p class="font-black text-sm underline tracking-wide">Nur'aeni Puspitasari, S.S., M.Ak.</p>
+              <p class="text-[11px] font-mono font-bold">NIP / NUPTK. 198202102009022004</p>
+            </div>
+          </div>
+        `;
+      }
 
       modal.classList.remove('hidden');
       lucide.createIcons();
