@@ -2309,15 +2309,107 @@
       return now.toTimeString().split(' ')[0];
     }
 
+    // ====================================================
+    // HELPER IDENTITAS UUID & SINKRONISASI GURU SUPABASE
+    // ====================================================
+    function generateUUID() {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    function isValidUUID(str) {
+      return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    }
+
+    async function ensureTeacherInSupabase(user) {
+      if (!user) return null;
+      if (isValidUUID(user.id)) {
+        if (!IS_PREVIEW && supabase) {
+          try {
+            const { data } = await supabase.from('teachers').select('id').eq('id', user.id).maybeSingle();
+            if (data?.id) return data.id;
+          } catch (e) {}
+        } else {
+          return user.id;
+        }
+      }
+
+      // Jika user.id bukan UUID valid atau belum ada di Supabase, cari berdasarkan NIP atau Email
+      if (!IS_PREVIEW && supabase) {
+        try {
+          let query = supabase.from('teachers').select('*');
+          if (user.nip && user.email) {
+            query = query.or(`nip.eq.${user.nip},email.eq.${user.email}`);
+          } else if (user.nip) {
+            query = query.eq('nip', user.nip);
+          } else if (user.email) {
+            query = query.eq('email', user.email);
+          }
+          const { data: existing } = await query.maybeSingle();
+          if (existing && existing.id) {
+            const oldId = user.id;
+            user.id = existing.id;
+            const tIdx = state.teachers.findIndex(t => t.id === oldId || t.nip === user.nip || t.email === user.email);
+            if (tIdx !== -1) {
+              state.teachers[tIdx].id = existing.id;
+            }
+            return existing.id;
+          }
+
+          // Jika belum ada di Supabase, daftarkan record baru ke tabel teachers
+          const newTeacherRecord = {
+            nip: user.nip || ('19' + Math.floor(10000000000000 + Math.random() * 90000000000000)),
+            email: user.email || (`guru_${Date.now()}@smpn71bandung.sch.id`),
+            password: user.password || '123456',
+            full_name: user.full_name || 'GURU PEGAWAI',
+            position: user.position || 'Guru Pegawai',
+            face_registered: Boolean(user.face_registered),
+            face_photo_url: user.face_photo_url || '',
+            avatar_url: user.avatar_url || ''
+          };
+          const { data: created } = await supabase.from('teachers').insert([newTeacherRecord]).select().single();
+          if (created && created.id) {
+            const oldId = user.id;
+            user.id = created.id;
+            const tIdx = state.teachers.findIndex(t => t.id === oldId || t.nip === user.nip);
+            if (tIdx !== -1) {
+              state.teachers[tIdx].id = created.id;
+            } else {
+              state.teachers.push(created);
+            }
+            return created.id;
+          }
+        } catch (err) {
+          console.warn('ensureTeacherInSupabase error:', err);
+        }
+      }
+
+      if (!isValidUUID(user.id)) {
+        const newUid = generateUUID();
+        const oldId = user.id;
+        user.id = newUid;
+        const tIdx = state.teachers.findIndex(t => t.id === oldId);
+        if (tIdx !== -1) state.teachers[tIdx].id = newUid;
+      }
+      return user.id;
+    }
+
     // Helper Pencegah Data Presensi Ganda (1 Guru Hanya 1 Data per Tanggal)
     function deduplicateAttendances(list) {
       if (!Array.isArray(list)) return [];
       const map = new Map();
       for (const item of list) {
         if (!item || !item.teacher_id || !item.attendance_date) continue;
-        const key = `${item.teacher_id}_${item.attendance_date}`;
+        const teacherMatch = state.teachers.find(t => t.id === item.teacher_id || t.nip === item.teacher_id || t.email === item.teacher_id);
+        const standardTeacherId = teacherMatch ? teacherMatch.id : item.teacher_id;
+        const key = `${standardTeacherId}_${item.attendance_date}`;
         if (!map.has(key)) {
-          map.set(key, { ...item });
+          map.set(key, { ...item, teacher_id: standardTeacherId });
         } else {
           // Gabungkan data agar lengkap jika salah satu memiliki jam masuk atau pulang
           const existing = map.get(key);
@@ -2333,6 +2425,62 @@
         }
       }
       return Array.from(map.values());
+    }
+
+    // Real-time listener Supabase untuk sinkronisasi otomatis multi-perangkat
+    let realtimeChannelsInitialized = false;
+    function initSupabaseRealtimeSubscriptions() {
+      if (IS_PREVIEW || !supabase || realtimeChannelsInitialized) return;
+      try {
+        supabase
+          .channel('public:attendances_realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, async () => {
+            const { data: attData } = await supabase.from('attendances').select('*').order('attendance_date', { ascending: false });
+            if (attData) {
+              state.attendances = deduplicateAttendances(attData);
+              if (state.currentUser?.role === 'admin') {
+                renderAdminAllTables();
+                renderAdminCharts();
+              } else if (state.currentUser?.role === 'guru') {
+                renderGuruAttendanceList();
+                renderGuruHeaderAndButton();
+              }
+            }
+          })
+          .subscribe();
+
+        supabase
+          .channel('public:teachers_realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'teachers' }, async () => {
+            const { data: tchData } = await supabase.from('teachers').select('*').order('full_name', { ascending: true });
+            if (tchData) {
+              state.teachers = tchData;
+              if (state.currentUser?.role === 'admin') {
+                renderAdminAllTables();
+              }
+            }
+          })
+          .subscribe();
+
+        supabase
+          .channel('public:leave_requests_realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, async () => {
+            const { data: lvData } = await supabase.from('leave_requests').select('*').order('request_date', { ascending: false });
+            if (lvData) {
+              state.leaveRequests = lvData;
+              if (state.currentUser?.role === 'admin') {
+                renderAdminAllTables();
+              } else if (state.currentUser?.role === 'guru') {
+                renderGuruLeaveLists();
+              }
+            }
+          })
+          .subscribe();
+
+        realtimeChannelsInitialized = true;
+      } catch (err) {
+        console.warn('Realtime subscription error:', err);
+      }
     }
 
     // ====================================================
@@ -3133,52 +3281,80 @@
     // ====================================================
     // KAMERA BIOMETRIK WAJAH & PRESENSI 2X (MASUK / PULANG)
     // ====================================================
+    function setAttendanceTargetType(type = 'masuk') {
+      state.attendanceTargetType = type;
+      const btnMasuk = document.getElementById('btn-choice-masuk');
+      const btnPulang = document.getElementById('btn-choice-pulang');
+      const labelMasuk = document.getElementById('label-last-masuk');
+      const labelPulang = document.getElementById('label-last-pulang');
+
+      if (type === 'masuk') {
+        if (btnMasuk) {
+          btnMasuk.className = 'py-2 px-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center bg-brandteal-700 text-white shadow-md border-2 border-emerald-300 ring-2 ring-emerald-500/30';
+        }
+        if (btnPulang) {
+          btnPulang.className = 'py-2 px-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center bg-white/10 text-slate-300 hover:text-white border border-white/10 opacity-75';
+        }
+        if (labelMasuk) labelMasuk.className = 'text-[10px] font-semibold text-emerald-200 mt-0.5';
+        if (labelPulang) labelPulang.className = 'text-[10px] font-normal text-slate-400 mt-0.5';
+      } else {
+        if (btnPulang) {
+          btnPulang.className = 'py-2 px-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center bg-brandteal-700 text-white shadow-md border-2 border-emerald-300 ring-2 ring-emerald-500/30';
+        }
+        if (btnMasuk) {
+          btnMasuk.className = 'py-2 px-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center bg-white/10 text-slate-300 hover:text-white border border-white/10 opacity-75';
+        }
+        if (labelPulang) labelPulang.className = 'text-[10px] font-semibold text-emerald-200 mt-0.5';
+        if (labelMasuk) labelMasuk.className = 'text-[10px] font-normal text-slate-400 mt-0.5';
+      }
+    }
+
     async function openCameraModal(mode = 'attendance') {
       state.cameraMode = mode;
       const modal = document.getElementById('modal-camera-absensi');
       const titleEl = document.getElementById('camera-modal-title');
-      const targetSelector = document.getElementById('camera-target-selector');
+      const typeSelector = document.getElementById('camera-att-type-selector');
 
       if (mode === 'enroll') {
-        titleEl.textContent = 'Pendaftaran Wajah Pegawai';
-        if (targetSelector) targetSelector.classList.add('hidden');
+        if (titleEl) titleEl.textContent = 'Pendaftaran Wajah Pegawai';
+        if (typeSelector) typeSelector.classList.add('hidden');
       } else {
-        titleEl.textContent = 'Presensi Biometrik Wajah';
-        if (targetSelector) {
-          targetSelector.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = 'Presensi Biometrik Wajah';
+        if (typeSelector) {
+          typeSelector.classList.remove('hidden');
 
           // Cek data presensi hari ini untuk menentukan status Masuk & Pulang
           const user = state.currentUser;
           const todayISO = getTodayISO();
-          const existing = state.attendances.find(a => a.teacher_id === user?.id && a.attendance_date === todayISO);
+          const existing = state.attendances.find(
+            a => (a.teacher_id === user?.id || a.teacher_id === user?.nip) && a.attendance_date === todayISO
+          );
 
           const lblMasuk = document.getElementById('label-last-masuk');
           const lblPulang = document.getElementById('label-last-pulang');
-          const radMasuk = document.getElementById('target-presensi-masuk');
-          const radPulang = document.getElementById('target-presensi-pulang');
 
           if (existing && existing.check_in_time) {
-            lblMasuk.textContent = `(Tercatat: ${existing.check_in_time})`;
+            if (lblMasuk) lblMasuk.textContent = `(Tercatat: ${existing.check_in_time})`;
           } else {
-            lblMasuk.textContent = `(Belum Ada)`;
+            if (lblMasuk) lblMasuk.textContent = `(Belum Ada)`;
           }
 
           if (existing && existing.check_out_time) {
-            lblPulang.textContent = `(Tercatat: ${existing.check_out_time})`;
+            if (lblPulang) lblPulang.textContent = `(Tercatat: ${existing.check_out_time})`;
           } else {
-            lblPulang.textContent = `(Belum Ada)`;
+            if (lblPulang) lblPulang.textContent = `(Belum Ada)`;
           }
 
           // Otomatis arahkan ke Masuk jika belum masuk, atau Pulang jika sudah masuk
           if (!existing || !existing.check_in_time) {
-            radMasuk.checked = true;
+            setAttendanceTargetType('masuk');
           } else {
-            radPulang.checked = true;
+            setAttendanceTargetType('pulang');
           }
         }
       }
 
-      modal.classList.remove('hidden');
+      if (modal) modal.classList.remove('hidden');
       await startCameraStream();
       validateCurrentGPSLocation();
       lucide.createIcons();
@@ -3463,17 +3639,24 @@
 
       state.isCapturingBiometric = true;
       const btnCapture = document.getElementById('btn-capture-biometric');
+      const spinner = document.getElementById('capture-btn-spinner');
+      const label = document.getElementById('capture-btn-label');
       if (btnCapture) {
         btnCapture.disabled = true;
         btnCapture.classList.add('opacity-70', 'cursor-not-allowed');
       }
+      if (spinner) spinner.classList.remove('hidden');
+      if (label) label.textContent = 'Menyimpan & Menyinkronkan...';
 
       try {
         const snapshotDataUrl = captureFaceSnapshot();
 
+        // Pastikan teacher memiliki UUID valid di Supabase tabel teachers
+        const validTeacherId = await ensureTeacherInSupabase(user);
+
         // 1. MODE PENDAFTARAN WAJAH (Foto tersimpan & status langsung 'Sudah Rekam' di Admin & Profil)
         if (state.cameraMode === 'enroll') {
-          if (!IS_PREVIEW && supabase) {
+          if (!IS_PREVIEW && supabase && validTeacherId) {
             try {
               await supabase
                 .from('teachers')
@@ -3482,7 +3665,7 @@
                   face_photo_url: snapshotDataUrl,
                   avatar_url: snapshotDataUrl
                 })
-                .eq('id', user.id);
+                .eq('id', validTeacherId);
             } catch (e) {
               console.warn('Gagal sinkron pendaftaran wajah ke Supabase:', e);
             }
@@ -3494,7 +3677,7 @@
           state.currentUser.avatar_url = snapshotDataUrl;
 
           // Sinkronkan ke daftar guru lokal
-          const tIdx = state.teachers.findIndex(t => t.id === user.id || t.nip === user.nip);
+          const tIdx = state.teachers.findIndex(t => t.id === validTeacherId || t.id === user.id || t.nip === user.nip);
           if (tIdx !== -1) {
             state.teachers[tIdx].face_registered = true;
             state.teachers[tIdx].face_photo_url = snapshotDataUrl;
@@ -3515,31 +3698,31 @@
           user.face_registered = true;
           user.face_photo_url = snapshotDataUrl;
           user.avatar_url = snapshotDataUrl;
-          const tIdx = state.teachers.findIndex(t => t.id === user.id || t.nip === user.nip);
+          const tIdx = state.teachers.findIndex(t => t.id === validTeacherId || t.id === user.id || t.nip === user.nip);
           if (tIdx !== -1) {
             state.teachers[tIdx].face_registered = true;
             state.teachers[tIdx].face_photo_url = snapshotDataUrl;
             state.teachers[tIdx].avatar_url = snapshotDataUrl;
           }
-          if (!IS_PREVIEW && supabase) {
+          if (!IS_PREVIEW && supabase && validTeacherId) {
             try {
               await supabase.from('teachers').update({
                 face_registered: true,
                 face_photo_url: snapshotDataUrl,
                 avatar_url: snapshotDataUrl
-              }).eq('id', user.id);
+              }).eq('id', validTeacherId);
             } catch (e) {}
           }
         }
 
-        const targetType = document.querySelector('input[name="target_attendance_type"]:checked')?.value || 'masuk';
+        const targetType = state.attendanceTargetType || 'masuk';
         const todayISO = getTodayISO();
         const nowHMS = getCurrentTimeHMS();
         const todaySchedule = getTodaySchedule();
 
         // Cari apakah sudah ada data presensi hari ini untuk guru ini (HANYA 1 DATA)
         let existing = state.attendances.find(
-          a => (a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO
+          a => (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip || a.teacher_id === user.email) && a.attendance_date === todayISO
         );
 
         if (targetType === 'masuk') {
@@ -3550,7 +3733,7 @@
             existing.check_in_time = nowHMS;
             existing.status = dynamicStatus;
             existing.distance_meters = state.gpsValidation.distanceMeters;
-            existing.notes = 'Presensi Masuk';
+            existing.notes = 'Presensi Masuk (Biometrik Wajah)';
             if (existing.check_out_time) {
               existing.work_duration = formatDuration(nowHMS, existing.check_out_time);
               if (dynamicStatus !== 'Terlambat') existing.status = 'Lengkap';
@@ -3564,27 +3747,31 @@
                   work_duration: existing.work_duration,
                   notes: existing.notes,
                   distance_meters: existing.distance_meters
-                }).eq('id', existing.id);
-              } catch (e) {}
+                }).eq('teacher_id', validTeacherId).eq('attendance_date', todayISO);
+              } catch (e) {
+                console.warn('Update presensi masuk Supabase gagal:', e);
+              }
             }
 
             state.attendances = deduplicateAttendances(state.attendances);
             closeCameraModal();
             renderGuruAttendanceList();
+            renderGuruHeaderAndButton();
             renderAdminAllTables();
             renderAdminCharts();
             showToast(`Presensi Masuk diperbarui pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
           } else {
             // Presensi Masuk Baru (Hanya 1 kali insert)
+            const newUid = generateUUID();
             const newRec = {
-              id: 'att-' + Date.now(),
-              teacher_id: user.id,
+              id: newUid,
+              teacher_id: validTeacherId,
               attendance_date: todayISO,
               check_in_time: nowHMS,
               check_out_time: null,
               work_duration: 'Sedang bertugas',
               status: dynamicStatus,
-              notes: 'Presensi Masuk',
+              notes: 'Presensi Masuk (Biometrik Wajah)',
               lat_in: state.gpsValidation.userLat,
               lng_in: state.gpsValidation.userLng,
               distance_meters: state.gpsValidation.distanceMeters,
@@ -3593,25 +3780,31 @@
 
             if (!IS_PREVIEW && supabase) {
               try {
-                // Cek sekali lagi di Supabase untuk mencegah double insert karena jaringan
-                const { data: dbCheck } = await supabase
-                  .from('attendances')
-                  .select('id')
-                  .eq('teacher_id', user.id)
-                  .eq('attendance_date', todayISO)
-                  .maybeSingle();
+                const dbPayload = {
+                  teacher_id: validTeacherId,
+                  attendance_date: todayISO,
+                  check_in_time: nowHMS,
+                  check_out_time: null,
+                  work_duration: 'Sedang bertugas',
+                  status: dynamicStatus,
+                  notes: 'Presensi Masuk (Biometrik Wajah)',
+                  lat_in: state.gpsValidation.userLat,
+                  lng_in: state.gpsValidation.userLng,
+                  distance_meters: state.gpsValidation.distanceMeters,
+                  face_score: 98.6
+                };
 
-                if (dbCheck) {
-                  await supabase.from('attendances').update({
-                    check_in_time: nowHMS,
-                    status: dynamicStatus,
-                    notes: 'Presensi Masuk',
-                    distance_meters: state.gpsValidation.distanceMeters
-                  }).eq('id', dbCheck.id);
-                  newRec.id = dbCheck.id;
-                } else {
-                  const { data: inserted } = await supabase.from('attendances').insert([newRec]).select().single();
-                  if (inserted) newRec.id = inserted.id;
+                const { data: inserted, error: insertErr } = await supabase
+                  .from('attendances')
+                  .upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' })
+                  .select()
+                  .single();
+
+                if (inserted && inserted.id) {
+                  newRec.id = inserted.id;
+                }
+                if (insertErr) {
+                  console.warn('Supabase upsert attendances warning:', insertErr);
                 }
               } catch (e) {
                 console.warn('Simpan presensi masuk supabase error:', e);
@@ -3619,18 +3812,19 @@
             }
 
             // Hapus duplikat lokal jika ada, lalu masukkan data terbaru
-            state.attendances = state.attendances.filter(a => !( (a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
+            state.attendances = state.attendances.filter(a => !( (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
             state.attendances.unshift(newRec);
             state.attendances = deduplicateAttendances(state.attendances);
 
             closeCameraModal();
             renderGuruAttendanceList();
+            renderGuruHeaderAndButton();
             renderAdminAllTables();
             renderAdminCharts();
             showToast(`Presensi Masuk berhasil dicatat pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
           }
         } else {
-          // Presensi Pulang (HANYA 1 DATA PER HARI)
+          // TARGET TYPE === 'PULANG' (HANYA 1 DATA PER HARI)
           if (existing) {
             const checkInRef = existing.check_in_time || '07:30:00';
             const duration = formatDuration(checkInRef, nowHMS);
@@ -3639,36 +3833,57 @@
             existing.check_out_time = nowHMS;
             existing.work_duration = duration;
             existing.status = finalStatus;
-            existing.notes = 'Presensi Pulang';
+            existing.notes = 'Presensi Masuk & Pulang Lengkap';
 
             if (!IS_PREVIEW && supabase) {
               try {
-                await supabase.from('attendances').update({
+                const { data: updated } = await supabase.from('attendances').update({
                   check_out_time: nowHMS,
                   work_duration: duration,
                   status: finalStatus,
                   notes: existing.notes
-                }).eq('id', existing.id);
-              } catch (e) {}
+                }).eq('teacher_id', validTeacherId).eq('attendance_date', todayISO).select();
+
+                if (!updated || updated.length === 0) {
+                  const dbPayload = {
+                    teacher_id: validTeacherId,
+                    attendance_date: todayISO,
+                    check_in_time: existing.check_in_time || null,
+                    check_out_time: nowHMS,
+                    work_duration: duration,
+                    status: finalStatus,
+                    notes: existing.notes,
+                    lat_in: state.gpsValidation.userLat,
+                    lng_in: state.gpsValidation.userLng,
+                    distance_meters: state.gpsValidation.distanceMeters,
+                    face_score: 98.6
+                  };
+                  await supabase.from('attendances').upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' });
+                }
+              } catch (e) {
+                console.warn('Update presensi pulang Supabase gagal:', e);
+              }
             }
 
             state.attendances = deduplicateAttendances(state.attendances);
             closeCameraModal();
             renderGuruAttendanceList();
+            renderGuruHeaderAndButton();
             renderAdminAllTables();
             renderAdminCharts();
             showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}! Durasi kerja: ${duration}`, 'success');
           } else {
             // Guru langsung absen pulang tanpa absen masuk sebelumnya
+            const newUid = generateUUID();
             const newRec = {
-              id: 'att-' + Date.now(),
-              teacher_id: user.id,
+              id: newUid,
+              teacher_id: validTeacherId,
               attendance_date: todayISO,
               check_in_time: null,
               check_out_time: nowHMS,
               work_duration: '-',
               status: 'Pulang',
-              notes: 'Hanya Presensi Pulang',
+              notes: 'Hanya Presensi Pulang (Biometrik Wajah)',
               lat_in: state.gpsValidation.userLat,
               lng_in: state.gpsValidation.userLng,
               distance_meters: state.gpsValidation.distanceMeters,
@@ -3677,33 +3892,44 @@
 
             if (!IS_PREVIEW && supabase) {
               try {
-                const { data: dbCheck } = await supabase
-                  .from('attendances')
-                  .select('id')
-                  .eq('teacher_id', user.id)
-                  .eq('attendance_date', todayISO)
-                  .maybeSingle();
+                const dbPayload = {
+                  teacher_id: validTeacherId,
+                  attendance_date: todayISO,
+                  check_in_time: null,
+                  check_out_time: nowHMS,
+                  work_duration: '-',
+                  status: 'Pulang',
+                  notes: 'Hanya Presensi Pulang (Biometrik Wajah)',
+                  lat_in: state.gpsValidation.userLat,
+                  lng_in: state.gpsValidation.userLng,
+                  distance_meters: state.gpsValidation.distanceMeters,
+                  face_score: 98.6
+                };
 
-                if (dbCheck) {
-                  await supabase.from('attendances').update({
-                    check_out_time: nowHMS,
-                    status: 'Pulang',
-                    notes: 'Hanya Presensi Pulang'
-                  }).eq('id', dbCheck.id);
-                  newRec.id = dbCheck.id;
-                } else {
-                  const { data: inserted } = await supabase.from('attendances').insert([newRec]).select().single();
-                  if (inserted) newRec.id = inserted.id;
+                const { data: inserted, error: insertErr } = await supabase
+                  .from('attendances')
+                  .upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' })
+                  .select()
+                  .single();
+
+                if (inserted && inserted.id) {
+                  newRec.id = inserted.id;
                 }
-              } catch (e) {}
+                if (insertErr) {
+                  console.warn('Supabase upsert pulang warning:', insertErr);
+                }
+              } catch (e) {
+                console.warn('Simpan presensi pulang Supabase error:', e);
+              }
             }
 
-            state.attendances = state.attendances.filter(a => !( (a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
+            state.attendances = state.attendances.filter(a => !( (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
             state.attendances.unshift(newRec);
             state.attendances = deduplicateAttendances(state.attendances);
 
             closeCameraModal();
             renderGuruAttendanceList();
+            renderGuruHeaderAndButton();
             renderAdminAllTables();
             renderAdminCharts();
             showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}`, 'success');
@@ -3762,9 +3988,11 @@
         return;
       }
 
+      const validTeacherId = await ensureTeacherInSupabase(user);
+
       const newLeave = {
-        id: 'lv-' + Date.now(),
-        teacher_id: user.id,
+        id: generateUUID(),
+        teacher_id: validTeacherId,
         request_type: reqType,
         request_date: reqDate,
         duration_type: durType,
@@ -3772,24 +4000,22 @@
         status: 'Menunggu'
       };
 
-      if (!IS_PREVIEW && supabase) {
+      if (!IS_PREVIEW && supabase && validTeacherId) {
         try {
           const { data } = await supabase.from('leave_requests').insert([{
-            teacher_id: newLeave.teacher_id,
+            teacher_id: validTeacherId,
             request_type: newLeave.request_type,
             request_date: newLeave.request_date,
             duration_type: newLeave.duration_type,
             description: newLeave.description,
             status: 'Menunggu'
           }]).select().single();
-          if (data) state.leaveRequests.unshift(data);
-          else state.leaveRequests.unshift(newLeave);
+          if (data) newLeave.id = data.id;
         } catch (e) {
-          state.leaveRequests.unshift(newLeave);
+          console.warn('Gagal simpan leave_requests Supabase:', e);
         }
-      } else {
-        state.leaveRequests.unshift(newLeave);
       }
+      state.leaveRequests.unshift(newLeave);
 
       // SINKRONISASI REAL-TIME KE TABEL ATTENDANCES
       // Otomatis langsung tampil di riwayat presensi guru, monitoring admin, dan rekap & laporan
@@ -3798,7 +4024,7 @@
       else if (reqType.includes('WFA')) mappedStatus = 'WFA/H';
       else if (reqType.includes('Izin')) mappedStatus = 'Izin';
 
-      let attItem = state.attendances.find(a => a.teacher_id === user.id && a.attendance_date === reqDate);
+      let attItem = state.attendances.find(a => (a.teacher_id === validTeacherId || a.teacher_id === user.id) && a.attendance_date === reqDate);
       if (attItem) {
         attItem.status = mappedStatus;
         attItem.notes = `${reqType}: ${desc}`;
@@ -3807,10 +4033,21 @@
           attItem.check_out_time = '16:00:00';
           attItem.work_duration = '8j 30m';
         }
+        if (!IS_PREVIEW && supabase && validTeacherId) {
+          try {
+            await supabase.from('attendances').update({
+              status: attItem.status,
+              notes: attItem.notes,
+              check_in_time: attItem.check_in_time,
+              check_out_time: attItem.check_out_time,
+              work_duration: attItem.work_duration
+            }).eq('teacher_id', validTeacherId).eq('attendance_date', reqDate);
+          } catch (e) {}
+        }
       } else {
         const synchedAttendance = {
-          id: 'att-sync-' + Date.now(),
-          teacher_id: user.id,
+          id: generateUUID(),
+          teacher_id: validTeacherId,
           attendance_date: reqDate,
           check_in_time: reqType.includes('WFA') ? '07:30:00' : null,
           check_out_time: reqType.includes('WFA') ? '16:00:00' : null,
@@ -3820,14 +4057,26 @@
           distance_meters: 0
         };
 
-        if (!IS_PREVIEW && supabase) {
+        if (!IS_PREVIEW && supabase && validTeacherId) {
           try {
-            await supabase.from('attendances').insert([synchedAttendance]);
+            const dbPayload = {
+              teacher_id: validTeacherId,
+              attendance_date: reqDate,
+              check_in_time: synchedAttendance.check_in_time,
+              check_out_time: synchedAttendance.check_out_time,
+              work_duration: synchedAttendance.work_duration,
+              status: mappedStatus,
+              notes: synchedAttendance.notes,
+              distance_meters: 0
+            };
+            const { data: inserted } = await supabase.from('attendances').upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' }).select().single();
+            if (inserted && inserted.id) synchedAttendance.id = inserted.id;
           } catch (e) {}
         }
         state.attendances.unshift(synchedAttendance);
       }
 
+      state.attendances = deduplicateAttendances(state.attendances);
       closeLeaveModal();
       renderGuruLeaveLists();
       renderGuruAttendanceList();
@@ -4008,7 +4257,7 @@
         dates.push(`${yyyy}-${mm}-${dd}`);
       }
 
-      const hadirData = dates.map(dt => state.attendances.filter(a => a.attendance_date === dt && (a.status === 'Hadir' || a.status === 'Lengkap')).length);
+      const hadirData = dates.map(dt => state.attendances.filter(a => a.attendance_date === dt && (a.status === 'Hadir' || a.status === 'Lengkap' || a.status === 'Masuk' || a.status === 'Pulang')).length);
       const terlambatData = dates.map(dt => state.attendances.filter(a => a.attendance_date === dt && a.status === 'Terlambat').length);
       const dinasData = dates.map(dt => state.attendances.filter(a => a.attendance_date === dt && a.status === 'Dinas Luar').length);
       const izinData = dates.map(dt => state.attendances.filter(a => a.attendance_date === dt && ['Sakit', 'Izin', 'WFA/H'].includes(a.status)).length);
@@ -4046,7 +4295,7 @@
       // 2. Data Komposisi Hari Ini
       const todayISO = getTodayISO();
       const todayAtts = state.attendances.filter(a => a.attendance_date === todayISO);
-      const countHadir = todayAtts.filter(a => a.status === 'Hadir' || a.status === 'Lengkap').length;
+      const countHadir = todayAtts.filter(a => a.status === 'Hadir' || a.status === 'Lengkap' || a.status === 'Masuk' || a.status === 'Pulang').length;
       const countTerlambat = todayAtts.filter(a => a.status === 'Terlambat').length;
       const countDinas = todayAtts.filter(a => a.status === 'Dinas Luar').length;
       const countIzin = todayAtts.filter(a => ['Sakit', 'Izin', 'WFA/H'].includes(a.status)).length;
@@ -4250,14 +4499,15 @@
               check_out_time: outTime,
               work_duration: durText,
               notes: notes
-            }).eq('id', existingAtt.id);
+            }).eq('teacher_id', teacherId).eq('attendance_date', attDate);
           } catch (e) {
             console.warn('Update attendance supabase error:', e);
           }
         }
       } else {
+        const newUid = generateUUID();
         const newAtt = {
-          id: 'att-man-' + Date.now(),
+          id: newUid,
           teacher_id: teacherId,
           attendance_date: attDate,
           check_in_time: inTime,
@@ -4271,15 +4521,24 @@
 
         if (!IS_PREVIEW && supabase) {
           try {
-            const { data } = await supabase.from('attendances').insert([newAtt]).select().single();
-            if (data) state.attendances.unshift(data);
-            else state.attendances.unshift(newAtt);
+            const dbPayload = {
+              teacher_id: teacherId,
+              attendance_date: attDate,
+              check_in_time: inTime,
+              check_out_time: outTime,
+              work_duration: durText,
+              status: statusVal,
+              notes: notes,
+              distance_meters: 0,
+              face_score: 99.5
+            };
+            const { data } = await supabase.from('attendances').upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' }).select().single();
+            if (data?.id) newAtt.id = data.id;
           } catch (e) {
-            state.attendances.unshift(newAtt);
+            console.warn('Simpan attendances manual error:', e);
           }
-        } else {
-          state.attendances.unshift(newAtt);
         }
+        state.attendances.unshift(newAtt);
       }
 
       state.attendances = deduplicateAttendances(state.attendances);
@@ -4306,7 +4565,7 @@
           }
         } else {
           const newLeave = {
-            id: 'lv-man-' + Date.now(),
+            id: generateUUID(),
             teacher_id: teacherId,
             request_type: reqType,
             request_date: attDate,
@@ -4316,7 +4575,15 @@
           };
           if (!IS_PREVIEW && supabase) {
             try {
-              await supabase.from('leave_requests').insert([newLeave]);
+              const { data } = await supabase.from('leave_requests').insert([{
+                teacher_id: teacherId,
+                request_type: reqType,
+                request_date: attDate,
+                duration_type: 'Full',
+                description: notes,
+                status: 'Diterima'
+              }]).select().single();
+              if (data?.id) newLeave.id = data.id;
             } catch (e) {}
           }
           state.leaveRequests.unshift(newLeave);
@@ -4592,7 +4859,7 @@
     function renderAdminAllTables() {
       const todayISO = getTodayISO();
       const todayAtts = state.attendances.filter(a => a.attendance_date === todayISO);
-      const countHadir = todayAtts.filter(a => a.status === 'Hadir' || a.status === 'Lengkap').length;
+      const countHadir = todayAtts.filter(a => a.status === 'Hadir' || a.status === 'Lengkap' || a.status === 'Masuk' || a.status === 'Pulang').length;
       const countTerlambat = todayAtts.filter(a => a.status === 'Terlambat').length;
       const countDinas = todayAtts.filter(a => a.status === 'Dinas Luar').length;
       const countWFA = todayAtts.filter(a => a.status === 'WFA/H').length;
@@ -4639,7 +4906,7 @@
           monTbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada data presensi tercatat.</td></tr>`;
         } else {
           monTbody.innerHTML = state.attendances.map(a => {
-            const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+            const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id || x.email === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
             const isLate = a.status === 'Terlambat';
             const badgeClass = isLate
               ? 'bg-amber-100 text-amber-800'
@@ -4786,7 +5053,8 @@
 
       let list = state.attendances;
       if (fTeacher !== 'all') {
-        list = list.filter(a => a.teacher_id === fTeacher);
+        const targetTeacherObj = state.teachers.find(x => x.id === fTeacher || x.nip === fTeacher);
+        list = list.filter(a => a.teacher_id === fTeacher || (targetTeacherObj && (a.teacher_id === targetTeacherObj.nip || a.teacher_id === targetTeacherObj.email || a.teacher_id === targetTeacherObj.id)));
       }
       if (fMonth !== 'all' && fMonth) {
         list = list.filter(a => a.attendance_date.startsWith(fMonth));
@@ -4798,7 +5066,7 @@
       }
 
       repTbody.innerHTML = list.map(a => {
-        const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+        const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id || x.email === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
         const isLate = a.status === 'Terlambat';
         return `
           <tr>
@@ -4858,7 +5126,7 @@
       const notesText = `${item.request_type} (${newStatus === 'Ditolak' ? 'Ditolak Admin' : 'Disetujui Admin'}): ${item.description}`;
 
       // Sinkronkan status di attendances agar terlihat setiap harinya di 'Riwayat Presensi' Guru
-      let attItem = state.attendances.find(a => a.teacher_id === item.teacher_id && a.attendance_date === item.request_date);
+      let attItem = state.attendances.find(a => (a.teacher_id === item.teacher_id) && a.attendance_date === item.request_date);
       if (attItem) {
         attItem.status = mappedStatus;
         attItem.notes = notesText;
@@ -4878,13 +5146,14 @@
               status: attItem.status,
               notes: attItem.notes,
               work_duration: attItem.work_duration
-            }).eq('id', attItem.id);
+            }).eq('teacher_id', item.teacher_id).eq('attendance_date', item.request_date);
           } catch (e) {}
         }
       } else {
         // Jika belum ada catatan kehadiran pada tanggal tersebut, buatkan otomatis agar langsung muncul di Riwayat Presensi Guru!
+        const newUid = generateUUID();
         const newAtt = {
-          id: 'att-sync-' + Date.now(),
+          id: newUid,
           teacher_id: item.teacher_id,
           attendance_date: item.request_date,
           check_in_time: (newStatus === 'Ditolak' || item.request_type.includes('Sakit') || item.request_type.includes('Izin')) ? null : '07:30:00',
@@ -4895,15 +5164,26 @@
           distance_meters: 0
         };
 
-        state.attendances.unshift(newAtt);
-
         if (!IS_PREVIEW && supabase) {
           try {
-            await supabase.from('attendances').insert([newAtt]);
+            const dbPayload = {
+              teacher_id: item.teacher_id,
+              attendance_date: item.request_date,
+              check_in_time: newAtt.check_in_time,
+              check_out_time: newAtt.check_out_time,
+              work_duration: newAtt.work_duration,
+              status: mappedStatus,
+              notes: notesText,
+              distance_meters: 0
+            };
+            const { data } = await supabase.from('attendances').upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' }).select().single();
+            if (data?.id) newAtt.id = data.id;
           } catch (e) {}
         }
+        state.attendances.unshift(newAtt);
       }
 
+      state.attendances = deduplicateAttendances(state.attendances);
       renderAdminAllTables();
       renderGuruLeaveLists();
       renderGuruAttendanceList();
@@ -5034,6 +5314,12 @@
         return;
       }
 
+      // Baca filter terkini dari elemen UI laporan
+      const filterTchEl = document.getElementById('report-filter-teacher');
+      const filterMthEl = document.getElementById('report-filter-month');
+      if (filterTchEl) state.reportFilterTeacher = filterTchEl.value;
+      if (filterMthEl) state.reportFilterMonth = filterMthEl.value || 'all';
+
       const rowsData = [
         ['PEMERINTAH KOTA BANDUNG'],
         ['DINAS PENDIDIKAN - SMP NEGERI 71 BANDUNG'],
@@ -5046,14 +5332,15 @@
       state.attendances = deduplicateAttendances(state.attendances);
       let list = state.attendances;
       if (state.reportFilterTeacher !== 'all') {
-        list = list.filter(a => a.teacher_id === state.reportFilterTeacher);
+        const targetTch = state.teachers.find(x => x.id === state.reportFilterTeacher || x.nip === state.reportFilterTeacher);
+        list = list.filter(a => a.teacher_id === state.reportFilterTeacher || (targetTch && (a.teacher_id === targetTch.nip || a.teacher_id === targetTch.email || a.teacher_id === targetTch.id)));
       }
       if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
         list = list.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
       }
 
       list.forEach((a, idx) => {
-        const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-', position: 'Guru' };
+        const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id || x.email === a.teacher_id) || { full_name: 'Pegawai', nip: '-', position: 'Guru' };
         rowsData.push([
           idx + 1,
           a.attendance_date,
@@ -5129,17 +5416,24 @@
     }
 
     function exportAttendanceCSV() {
+      // Baca filter terkini dari elemen UI laporan
+      const filterTchEl = document.getElementById('report-filter-teacher');
+      const filterMthEl = document.getElementById('report-filter-month');
+      if (filterTchEl) state.reportFilterTeacher = filterTchEl.value;
+      if (filterMthEl) state.reportFilterMonth = filterMthEl.value || 'all';
+
       state.attendances = deduplicateAttendances(state.attendances);
       let list = state.attendances;
       if (state.reportFilterTeacher !== 'all') {
-        list = list.filter(a => a.teacher_id === state.reportFilterTeacher);
+        const targetTch = state.teachers.find(x => x.id === state.reportFilterTeacher || x.nip === state.reportFilterTeacher);
+        list = list.filter(a => a.teacher_id === state.reportFilterTeacher || (targetTch && (a.teacher_id === targetTch.nip || a.teacher_id === targetTch.email || a.teacher_id === targetTch.id)));
       }
       if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
         list = list.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
       }
       const headers = ['Tanggal', 'NIP/NUPTK', 'Nama Lengkap', 'Jam Masuk', 'Jam Pulang', 'Durasi Kerja', 'Status'];
       const rows = list.map(a => {
-        const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+        const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id || x.email === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
         return [
           a.attendance_date,
           `"${t.nip}"`,
@@ -5325,7 +5619,7 @@
           `;
         } else {
           rowsHtml = list.map((a, idx) => {
-            const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id) || { full_name: 'Guru Pegawai', nip: '-' };
+            const t = state.teachers.find(x => x.id === a.teacher_id || x.nip === a.teacher_id || x.email === a.teacher_id) || { full_name: 'Guru Pegawai', nip: '-' };
             return `
               <tr>
                 <td class="border border-black p-2 text-center font-mono text-xs">${idx + 1}</td>
@@ -5421,7 +5715,7 @@
         `;
       } else {
         // 2. FORMAT LEMBAR REKAPITULASI INDIVIDUAL PER-PEGAWAI
-        let targetTeacher = state.teachers.find(t => t.id === state.reportFilterTeacher);
+        let targetTeacher = state.teachers.find(t => t.id === state.reportFilterTeacher || t.nip === state.reportFilterTeacher || t.email === state.reportFilterTeacher);
         if (!targetTeacher && state.currentUser?.role === 'guru') {
           targetTeacher = state.currentUser;
         }
@@ -5429,7 +5723,7 @@
           targetTeacher = state.teachers[0] || { full_name: 'Pegawai', nip: '-', position: 'Guru Pegawai' };
         }
 
-        let teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher.id || a.teacher_id === targetTeacher.nip);
+        let teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher.id || a.teacher_id === targetTeacher.nip || a.teacher_id === targetTeacher.email);
         if (state.reportFilterMonth !== 'all' && state.reportFilterMonth) {
           teacherAttendances = teacherAttendances.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
         }
@@ -5589,6 +5883,7 @@
       quickLoginAdmin,
       handleLogout,
       switchGuruTab,
+      setAttendanceTargetType,
       openCameraModal,
       closeCameraModal,
       toggleCameraFacingMode,
@@ -5653,6 +5948,7 @@
       } else {
         document.getElementById('preview-banner')?.remove();
         await loadAllSupabaseData();
+        initSupabaseRealtimeSubscriptions();
 
         // Cek session aktif Supabase Auth / Google OAuth jika ada
         if (supabase) {
@@ -5670,7 +5966,7 @@
                 showToast('Berhasil masuk sebagai Administrator via Akun Google.', 'success');
               } else {
                 const autoTeacher = {
-                  id: 't-google-' + Date.now(),
+                  id: generateUUID(),
                   nip: '19' + Math.floor(10000000000000 + Math.random() * 90000000000000),
                   email: uEmail,
                   password: 'google-oauth',
