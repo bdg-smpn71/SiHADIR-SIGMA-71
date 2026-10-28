@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>SiHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK</title>
   <meta name="theme-color" content="#0F1E36" />
   <meta name="description" content="SiHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK Berbasis Pengenalan Wajah dan Lokasi GPS SMP Negeri 71 Bandung" />
@@ -60,7 +60,17 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
-    /* Full Page Wrapper for Blogger Widget Compatibility without XML Edit */
+    /* Full Page Wrapper for APK & Mobile Fullscreen without Cutoff */
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      touch-action: pan-y;
+      background-color: #F4F7FA;
+    }
+
     #app-fullscreen-root {
       position: fixed;
       inset: 0;
@@ -71,6 +81,17 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       color: #0F172A;
       -webkit-tap-highlight-color: transparent;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Sembunyikan scrollbar visual tapi tetap bisa scroll halus */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
     /* Custom Scrollbars */
@@ -398,7 +419,7 @@
       </header>
 
       <!-- Kontainer Utama Mobile & Tablet Guru -->
-      <main class="flex-1 w-full max-w-xl md:max-w-4xl mx-auto px-4 sm:px-6 pt-4 space-y-4">
+      <main class="flex-1 w-full max-w-xl md:max-w-4xl mx-auto px-4 sm:px-6 pt-4 pb-28 space-y-4">
 
         <!-- TAB 1: PRESENSI (BERANDA GURU - REF 2 & 3) -->
         <section id="guru-tab-presensi" class="space-y-4">
@@ -585,7 +606,7 @@
       </main>
 
       <!-- Bottom Navigation Bar Guru (5 Kolom - Responsive Mobile & Tablet) -->
-      <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 py-2 px-3 shadow-lg">
+      <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 py-2 px-3 shadow-lg pb-[max(0.6rem,env(safe-area-inset-bottom))] select-none">
         <div class="w-full max-w-xl md:max-w-4xl mx-auto grid grid-cols-5 gap-1">
           <button onclick="window.app.switchGuruTab('presensi')" id="nav-guru-presensi" class="flex flex-col items-center justify-center py-1 text-navy-900 font-bold transition">
             <i data-lucide="timer" class="w-6 h-6 mb-1 stroke-[2.2]"></i>
@@ -661,70 +682,73 @@
       </aside>
 
       <!-- Area Konten Utama Admin -->
-      <div class="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
-        <!-- Top Header Bar Admin (Responsive Mobile, Tablet & Desktop) -->
-        <header class="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-          <div class="flex items-center gap-3">
-            <!-- Tombol Hamburger Menu Khusus Mobile / Tablet -->
-            <button type="button" onclick="window.app.toggleAdminMobileMenu()" class="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition" title="Buka Menu Admin">
-              <i data-lucide="menu" class="w-5 h-5"></i>
-            </button>
-            <div>
-              <h1 id="admin-top-title" class="text-sm font-extrabold text-slate-900 leading-tight">Dashboard & Grafik</h1>
-              <p id="admin-top-date" class="text-[11px] text-slate-400 font-medium">Memuat tanggal...</p>
+      <div class="flex-1 flex flex-col min-w-0 pb-32 lg:pb-10">
+        <!-- Top Header Bar Admin (Responsive Mobile, Tablet & Desktop - Single Unified Sticky Header) -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs select-none">
+          <!-- Baris 1: Title, Subtitle, Quick Actions & Profile -->
+          <div class="px-3.5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <!-- Tombol Hamburger Menu Khusus Mobile / Tablet -->
+              <button type="button" onclick="window.app.toggleAdminMobileMenu()" class="lg:hidden p-1.5 rounded-xl text-slate-700 hover:bg-slate-100 transition shrink-0" title="Buka Menu Admin">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+              </button>
+              <div class="min-w-0">
+                <h1 id="admin-top-title" class="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight truncate">Dashboard & Grafik</h1>
+                <p id="admin-top-date" class="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">Memuat tanggal...</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 sm:gap-4 shrink-0">
+              <!-- Tombol Cepat Presensi Manual Guru (Header) -->
+              <button onclick="window.app.openManualAttendanceModal()" class="px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1" title="Input Presensi Absen Manual Guru">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">+ Absen Manual</span>
+                <span class="sm:hidden text-[11px]">+ Absen</span>
+              </button>
+              <button onclick="window.app.showToast('Semua layanan Supabase dan Geofencing berjalan optimal.', 'success')" class="text-slate-400 hover:text-slate-600 p-1.5" title="Status Sistem">
+                <i data-lucide="bell" class="w-4 h-4"></i>
+              </button>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                  A
+                </div>
+                <div class="hidden md:block text-left leading-tight">
+                  <p class="text-xs font-bold text-slate-800">Administrator</p>
+                  <p class="text-[10px] text-slate-400">SMPN 71 Bandung</p>
+                </div>
+              </div>
+              <!-- Tombol Logout Mobile -->
+              <button onclick="window.app.handleLogout()" class="lg:hidden p-1.5 text-slate-400 hover:text-red-600 transition" title="Keluar Administrator">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+              </button>
             </div>
           </div>
-          <div class="flex items-center gap-2 sm:gap-4">
-            <!-- Tombol Cepat Presensi Manual Guru (Header) -->
-            <button onclick="window.app.openManualAttendanceModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Input Presensi Absen Manual Guru">
-              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-              <span class="hidden sm:inline">+ Absen Manual</span>
-              <span class="sm:hidden">+ Absen</span>
+
+          <!-- Baris 2: Horizontal Scrollable Navigation Pills (7 Fitur Lengkap Mengalir Alami di Bawah Baris Judul) -->
+          <div class="lg:hidden border-t border-slate-100 bg-slate-50/80 px-2.5 py-1.5 overflow-x-auto whitespace-nowrap flex items-center gap-1.5 no-scrollbar">
+            <button onclick="window.app.switchAdminTab('dashboard')" id="mob-admin-dashboard" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Dashboard
             </button>
-            <button onclick="window.app.showToast('Semua layanan Supabase dan Geofencing berjalan optimal.', 'success')" class="text-slate-400 hover:text-slate-600 p-1.5">
-              <i data-lucide="bell" class="w-4 h-4"></i>
+            <button onclick="window.app.switchAdminTab('konfigurasi')" id="mob-admin-konfigurasi" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="settings" class="w-3.5 h-3.5"></i> Konfigurasi
             </button>
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                A
-              </div>
-              <div class="hidden md:block text-left leading-tight">
-                <p class="text-xs font-bold text-slate-800">Administrator</p>
-                <p class="text-[10px] text-slate-400">SMPN 71 Bandung</p>
-              </div>
-            </div>
-            <!-- Tombol Logout Mobile -->
-            <button onclick="window.app.handleLogout()" class="lg:hidden p-1.5 text-slate-400 hover:text-red-600 transition" title="Keluar Administrator">
-              <i data-lucide="log-out" class="w-4 h-4"></i>
+            <button onclick="window.app.switchAdminTab('monitoring')" id="mob-admin-monitoring" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="clock" class="w-3.5 h-3.5"></i> Monitoring
+            </button>
+            <button onclick="window.app.switchAdminTab('guru')" id="mob-admin-guru" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="users" class="w-3.5 h-3.5"></i> Guru & Wajah
+            </button>
+            <button onclick="window.app.switchAdminTab('verifikasi')" id="mob-admin-verifikasi" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Dinas & Izin
+              <span id="admin-pending-badge-mob" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">0</span>
+            </button>
+            <button onclick="window.app.switchAdminTab('pengumuman')" id="mob-admin-pengumuman" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Pengumuman
+            </button>
+            <button onclick="window.app.switchAdminTab('laporan')" id="mob-admin-laporan" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Rekap & Laporan
             </button>
           </div>
         </header>
-
-        <!-- Horizontal Scrollable Navigation Pills untuk Mobile / Tablet (7 Fitur Lengkap) -->
-        <div class="lg:hidden bg-white border-b border-slate-200 px-3 py-2 overflow-x-auto whitespace-nowrap flex items-center gap-1.5 sticky top-[57px] z-20 shadow-xs">
-          <button onclick="window.app.switchAdminTab('dashboard')" id="mob-admin-dashboard" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Dashboard
-          </button>
-          <button onclick="window.app.switchAdminTab('konfigurasi')" id="mob-admin-konfigurasi" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="settings" class="w-3.5 h-3.5"></i> Konfigurasi
-          </button>
-          <button onclick="window.app.switchAdminTab('monitoring')" id="mob-admin-monitoring" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="clock" class="w-3.5 h-3.5"></i> Monitoring
-          </button>
-          <button onclick="window.app.switchAdminTab('guru')" id="mob-admin-guru" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="users" class="w-3.5 h-3.5"></i> Guru & Wajah
-          </button>
-          <button onclick="window.app.switchAdminTab('verifikasi')" id="mob-admin-verifikasi" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Dinas & Izin
-            <span id="admin-pending-badge-mob" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">0</span>
-          </button>
-          <button onclick="window.app.switchAdminTab('pengumuman')" id="mob-admin-pengumuman" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Pengumuman
-          </button>
-          <button onclick="window.app.switchAdminTab('laporan')" id="mob-admin-laporan" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Rekap & Laporan
-          </button>
-        </div>
 
         <!-- Slide-Down Mobile Drawer Menu Admin -->
         <div id="admin-mobile-drawer" class="hidden lg:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-1.5 shadow-md">
@@ -1299,32 +1323,29 @@
         </main>
       </div>
 
-      <!-- Bottom Navigation Bar Admin (Lengkap 7 Fitur + Logout untuk Mobile / Tablet) -->
-      <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 py-1.5 px-1 shadow-lg select-none">
-        <div class="w-full max-w-xl mx-auto overflow-x-auto whitespace-nowrap flex items-center justify-between gap-1 px-1">
-          <button onclick="window.app.switchAdminTab('dashboard')" id="bnav-admin-dashboard" class="flex flex-col items-center py-1 px-2 rounded-lg text-blue-600 font-bold text-[10px] shrink-0 transition">
-            <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i><span>Dashboard</span>
+      <!-- Bottom Navigation Bar Admin (5 Menu Grid Presisi Tanpa Terpotong untuk Mobile / Tablet) -->
+      <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 py-2 px-1 shadow-lg select-none pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+        <div class="grid grid-cols-5 w-full max-w-lg mx-auto items-center">
+          <!-- 1. Dashboard -->
+          <button onclick="window.app.switchAdminTab('dashboard')" id="bnav-admin-dashboard" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 font-bold text-[10px] transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i><span class="truncate">Dashboard</span>
           </button>
-          <button onclick="window.app.switchAdminTab('konfigurasi')" id="bnav-admin-konfigurasi" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
-            <i data-lucide="settings" class="w-4 h-4 mb-0.5"></i><span>Konfigurasi</span>
+          <!-- 2. Monitoring -->
+          <button onclick="window.app.switchAdminTab('monitoring')" id="bnav-admin-monitoring" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i><span class="truncate">Monitoring</span>
           </button>
-          <button onclick="window.app.switchAdminTab('monitoring')" id="bnav-admin-monitoring" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
-            <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i><span>Monitoring</span>
+          <!-- 3. Guru & Muka -->
+          <button onclick="window.app.switchAdminTab('guru')" id="bnav-admin-guru" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="users" class="w-4 h-4 mb-0.5"></i><span class="truncate">Guru/Muka</span>
           </button>
-          <button onclick="window.app.switchAdminTab('guru')" id="bnav-admin-guru" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
-            <i data-lucide="users" class="w-4 h-4 mb-0.5"></i><span>Guru & Muka</span>
+          <!-- 4. Dinas & Izin -->
+          <button onclick="window.app.switchAdminTab('verifikasi')" id="bnav-admin-verifikasi" class="relative flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="check-square" class="w-4 h-4 mb-0.5"></i><span class="truncate">Dinas/Izin</span>
+            <span id="admin-pending-badge-bnav" class="hidden absolute top-0.5 right-2 px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[9px] font-bold">0</span>
           </button>
-          <button onclick="window.app.switchAdminTab('verifikasi')" id="bnav-admin-verifikasi" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
-            <i data-lucide="check-square" class="w-4 h-4 mb-0.5"></i><span>Dinas & Izin</span>
-          </button>
-          <button onclick="window.app.switchAdminTab('pengumuman')" id="bnav-admin-pengumuman" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
-            <i data-lucide="megaphone" class="w-4 h-4 mb-0.5"></i><span>Pengumuman</span>
-          </button>
-          <button onclick="window.app.switchAdminTab('laporan')" id="bnav-admin-laporan" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4 mb-0.5"></i><span>Rekap/PDF</span>
-          </button>
-          <button onclick="window.app.handleLogout()" class="flex flex-col items-center py-1 px-2 rounded-lg text-rose-500 font-medium text-[10px] shrink-0 transition hover:text-rose-700">
-            <i data-lucide="log-out" class="w-4 h-4 mb-0.5"></i><span>Logout</span>
+          <!-- 5. Menu Lengkap / Lainnya -->
+          <button onclick="window.app.toggleAdminMobileMenu()" id="bnav-admin-menu" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="layout-grid" class="w-4 h-4 mb-0.5"></i><span class="truncate">Menu</span>
           </button>
         </div>
       </nav>
@@ -1354,6 +1375,27 @@
         <!-- Live Camera Video (Selfie Camera Support for Mobile & Tablet) -->
         <video id="camera-video-el" autoplay playsinline webkit-playsinline muted class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"></video>
         <canvas id="camera-fallback-canvas" class="hidden absolute inset-0 w-full h-full object-cover"></canvas>
+
+        <!-- Overlay Prompt Buka & Izinkan Kamera Khusus APK Android & User Gesture Direct -->
+        <div id="camera-permission-prompt" class="hidden absolute inset-0 z-30 bg-black/80 flex flex-col items-center justify-center p-6 text-center">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4 ring-8 ring-emerald-500/10">
+            <i data-lucide="camera" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-base font-extrabold text-white mb-1.5">Buka Akses Kamera</h4>
+          <p class="text-xs text-slate-300 max-w-xs mb-5 leading-relaxed">
+            Format APK Android memerlukan konfirmasi akses kamera. Ketuk tombol di bawah untuk membuka kamera depan/belakang secara langsung.
+          </p>
+          <div class="flex flex-col gap-2 w-full max-w-xs">
+            <button type="button" onclick="window.app.retryCameraStream()" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
+              <i data-lucide="camera" class="w-4 h-4"></i>
+              <span>Buka & Izinkan Kamera Sekarang</span>
+            </button>
+            <button type="button" onclick="window.app.toggleCameraFacingMode()" class="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
+              <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
+              <span>Putar Kamera Depan / Belakang</span>
+            </button>
+          </div>
+        </div>
 
         <!-- Panel Instruksi Mengambang di Atas (Persis Referensi 5) -->
         <div class="relative z-20 w-full max-w-md glass-dark rounded-2xl p-4 border border-white/10 shadow-xl">
@@ -3362,71 +3404,159 @@
 
     function closeCameraModal() {
       stopCameraStream();
-      document.getElementById('modal-camera-absensi').classList.add('hidden');
-      document.getElementById('modal-invalid-location').classList.add('hidden');
+      const modal = document.getElementById('modal-camera-absensi');
+      const invModal = document.getElementById('modal-invalid-location');
+      const permPrompt = document.getElementById('camera-permission-prompt');
+      if (modal) modal.classList.add('hidden');
+      if (invModal) invModal.classList.add('hidden');
+      if (permPrompt) permPrompt.classList.add('hidden');
+    }
+
+    // Helper Khusus Pembukaan Kamera Depan & Belakang Kompatibel Penuh Format APK & Android WebView
+    async function requestCameraMedia(facingMode = 'user') {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const legacyGUM = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        if (legacyGUM) {
+          return new Promise((resolve, reject) => {
+            legacyGUM.call(navigator, { video: true, audio: false }, resolve, reject);
+          });
+        }
+        throw new Error('navigator.mediaDevices.getUserMedia tidak didukung di perangkat ini');
+      }
+
+      // Deteksi perangkat kamera fisik (depan vs belakang) via enumerateDevices
+      let targetDeviceId = null;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        if (videoInputs.length > 0) {
+          if (facingMode === 'environment') {
+            const backDev = videoInputs.find(d => /back|rear|environment|belakang/i.test(d.label));
+            if (backDev) targetDeviceId = backDev.deviceId;
+            else if (videoInputs.length > 1) targetDeviceId = videoInputs[videoInputs.length - 1].deviceId;
+          } else {
+            const frontDev = videoInputs.find(d => /front|user|facing|selfie|depan/i.test(d.label));
+            if (frontDev) targetDeviceId = frontDev.deviceId;
+            else targetDeviceId = videoInputs[0].deviceId;
+          }
+        }
+      } catch (enumErr) {
+        console.warn('Enumerate devices warning:', enumErr);
+      }
+
+      // Daftar opsi constraints dari yang paling spesifik ke yang paling fleksibel (bebas OverconstrainedError di APK)
+      const constraintList = [];
+      if (targetDeviceId) {
+        constraintList.push({ video: { deviceId: { ideal: targetDeviceId } }, audio: false });
+        constraintList.push({ video: { deviceId: targetDeviceId }, audio: false });
+      }
+      constraintList.push({ video: { facingMode: { ideal: facingMode } }, audio: false });
+      constraintList.push({ video: { facingMode: facingMode }, audio: false });
+      constraintList.push({ video: true, audio: false });
+
+      let lastError = null;
+      for (const c of constraintList) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(c);
+          if (stream) return stream;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw lastError || new Error('Gagal membuka feed stream kamera');
     }
 
     async function startCameraStream() {
       const videoEl = document.getElementById('camera-video-el');
       const canvasEl = document.getElementById('camera-fallback-canvas');
+      const permPrompt = document.getElementById('camera-permission-prompt');
       if (!videoEl || !canvasEl) return;
 
       stopCameraStream();
 
       state.cameraFacingMode = state.cameraFacingMode || 'user'; // Default kamera depan (selfie)
 
-      // Sesuaikan orientasi cermin: hanya kamera depan (selfie) yang di-mirror
+      // Sesuaikan orientasi cermin: hanya kamera depan (selfie) yang di-mirror, kamera belakang tidak di-mirror
       if (state.cameraFacingMode === 'user') {
         videoEl.classList.add('scale-x-[-1]');
       } else {
         videoEl.classList.remove('scale-x-[-1]');
       }
 
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Daftar konfigurasi constraints bertingkat untuk kompatibilitas penuh Android Chrome, iOS Safari, dan Tablet
-        const constraintOptions = [
-          { video: { facingMode: { ideal: state.cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-          { video: { facingMode: { exact: state.cameraFacingMode } }, audio: false },
-          { video: { facingMode: state.cameraFacingMode }, audio: false },
-          { video: true, audio: false }
-        ];
+      // Wajib untuk Android Chromium WebView agar video stream dapat autoplay tanpa diblokir
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.autoplay = true;
+      videoEl.setAttribute('playsinline', 'true');
+      videoEl.setAttribute('webkit-playsinline', 'true');
+      videoEl.setAttribute('muted', 'true');
+      videoEl.setAttribute('autoplay', 'true');
 
-        for (const constraints of constraintOptions) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            if (stream) {
-              state.mediaStream = stream;
-              videoEl.srcObject = stream;
-              videoEl.setAttribute('playsinline', '');
-              videoEl.setAttribute('webkit-playsinline', '');
-              videoEl.classList.remove('hidden');
-              canvasEl.classList.add('hidden');
+      if (permPrompt) permPrompt.classList.add('hidden');
 
-              // Jalankan pemutaran video secara aman di browser mobile/tablet
-              try {
-                await videoEl.play();
-              } catch (playErr) {
-                videoEl.onloadedmetadata = () => {
-                  videoEl.play().catch(() => {});
-                };
-              }
-              return;
-            }
-          } catch (e) {
-            // Lanjut ke opsi constraints berikutnya
+      try {
+        const stream = await requestCameraMedia(state.cameraFacingMode);
+        if (stream) {
+          state.mediaStream = stream;
+          videoEl.srcObject = stream;
+          videoEl.classList.remove('hidden');
+          canvasEl.classList.add('hidden');
+
+          if (state.fallbackAnimId) {
+            cancelAnimationFrame(state.fallbackAnimId);
+            state.fallbackAnimId = null;
           }
+
+          if (permPrompt) permPrompt.classList.add('hidden');
+
+          const safePlay = async () => {
+            try {
+              await videoEl.play();
+            } catch (playErr) {
+              console.warn('Video play deferred:', playErr);
+            }
+          };
+
+          videoEl.onloadedmetadata = () => { safePlay(); };
+          videoEl.oncanplay = () => { safePlay(); };
+          await safePlay();
+
+          const readyText = document.getElementById('camera-ready-text');
+          if (readyText) {
+            readyText.textContent = state.cameraFacingMode === 'user' ? 'Kamera Depan Siap' : 'Kamera Belakang Siap';
+          }
+          lucide.createIcons();
+          return true;
         }
+      } catch (err) {
+        console.warn('Kamera otomatis belum terbuka di APK/WebView:', err);
       }
 
-      // Fallback jika kamera perangkat tidak diizinkan atau tidak tersedia
-      videoEl.classList.add('hidden');
-      canvasEl.classList.remove('hidden');
-      startFallbackCameraCanvas(canvasEl);
+      // Jika stream belum dapat terbuka (misal di APK perlu izin user gesture atau dialog izin Android OS sedang aktif):
+      if (permPrompt) {
+        permPrompt.classList.remove('hidden');
+        lucide.createIcons();
+      } else {
+        videoEl.classList.add('hidden');
+        canvasEl.classList.remove('hidden');
+        startFallbackCameraCanvas(canvasEl);
+      }
+      return false;
+    }
+
+    async function retryCameraStream() {
+      showToast('Menghubungkan ke sensor kamera...', 'info');
+      const ok = await startCameraStream();
+      if (ok) {
+        showToast(state.cameraFacingMode === 'user' ? 'Kamera Depan Berhasil Terbuka!' : 'Kamera Belakang Berhasil Terbuka!', 'success');
+      } else {
+        showToast('Pastikan izin kamera diizinkan di pengaturan aplikasi Android.', 'warning');
+      }
     }
 
     async function toggleCameraFacingMode() {
       state.cameraFacingMode = state.cameraFacingMode === 'user' ? 'environment' : 'user';
-      showToast(state.cameraFacingMode === 'user' ? 'Kamera Depan (Selfie) Aktif' : 'Kamera Belakang Aktif', 'info');
+      showToast(state.cameraFacingMode === 'user' ? 'Mengalihkan ke Kamera Depan (Selfie)...' : 'Mengalihkan ke Kamera Belakang...', 'info');
       await startCameraStream();
     }
 
@@ -3612,7 +3742,14 @@
         const minDim = Math.min(videoEl.videoWidth, videoEl.videoHeight);
         const startX = (videoEl.videoWidth - minDim) / 2;
         const startY = (videoEl.videoHeight - minDim) / 2;
+
+        ctx.save();
+        if (state.cameraFacingMode === 'user') {
+          ctx.translate(320, 0);
+          ctx.scale(-1, 1);
+        }
         ctx.drawImage(videoEl, startX, startY, minDim, minDim, 0, 0, 320, 320);
+        ctx.restore();
       } else {
         ctx.drawImage(fallbackCanvas, 0, 0, 320, 320);
       }
@@ -4366,16 +4503,28 @@
           if (t === tabName) {
             sec.classList.remove('hidden');
             if (sideBtn) sideBtn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 transition';
-            if (mobBtn) mobBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition';
-            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center py-1 px-2 rounded-lg text-blue-600 font-bold text-[10px] shrink-0 transition';
+            if (mobBtn) {
+              mobBtn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition';
+              mobBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 font-bold text-[10px] transition';
           } else {
             sec.classList.add('hidden');
             if (sideBtn) sideBtn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition';
-            if (mobBtn) mobBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition hover:text-slate-900';
-            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800';
+            if (mobBtn) mobBtn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition hover:text-slate-900';
+            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
           }
         }
       });
+
+      const bnavMenuBtn = document.getElementById('bnav-admin-menu');
+      if (bnavMenuBtn) {
+        if (['konfigurasi', 'pengumuman', 'laporan'].includes(tabName)) {
+          bnavMenuBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 font-bold text-[10px] transition';
+        } else {
+          bnavMenuBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
+        }
+      }
 
       if (tabName === 'dashboard') {
         setTimeout(renderAdminCharts, 120);
@@ -4874,6 +5023,9 @@
       const kpiWfahIzin = document.getElementById('kpi-wfah-izin');
       const kpiTotal = document.getElementById('kpi-total-guru');
       const pendingBadge = document.getElementById('admin-pending-badge');
+      const pendingBadgeMob = document.getElementById('admin-pending-badge-mob');
+      const pendingBadgeDrawer = document.getElementById('admin-pending-badge-drawer');
+      const pendingBadgeBnav = document.getElementById('admin-pending-badge-bnav');
 
       if (kpiHadir) kpiHadir.textContent = countHadir;
       if (kpiTerlambat) kpiTerlambat.textContent = countTerlambat;
@@ -4881,6 +5033,13 @@
       if (kpiWfahIzin) kpiWfahIzin.textContent = countWfahIzinAll;
       if (kpiTotal) kpiTotal.textContent = state.teachers.length;
       if (pendingBadge) pendingBadge.textContent = pendingCount;
+      if (pendingBadgeMob) pendingBadgeMob.textContent = pendingCount;
+      if (pendingBadgeDrawer) pendingBadgeDrawer.textContent = pendingCount;
+      if (pendingBadgeBnav) {
+        pendingBadgeBnav.textContent = pendingCount;
+        if (pendingCount > 0) pendingBadgeBnav.classList.remove('hidden');
+        else pendingBadgeBnav.classList.add('hidden');
+      }
 
       // 2. UPDATE KPI CARDS PADA MENU MONITORING PRESENSI (Real-Time)
       const statTotalGuru = document.getElementById('stat-total-guru');
@@ -5887,6 +6046,7 @@
       openCameraModal,
       closeCameraModal,
       toggleCameraFacingMode,
+      retryCameraStream,
       closeInvalidLocationModal,
       retryLocationValidation,
       handleCaptureBiometric,
