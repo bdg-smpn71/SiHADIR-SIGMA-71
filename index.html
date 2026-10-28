@@ -7,14 +7,18 @@
   <meta name="theme-color" content="#0F1E36" />
   <meta name="description" content="SiHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK Berbasis Pengenalan Wajah dan Lokasi GPS SMP Negeri 71 Bandung" />
 
-  <!-- Deklarasi Izin Android Hardware & Permissions-Policy untuk APK & WebView -->
-  <meta http-equiv="Permissions-Policy" content="camera=(self '*'), microphone=(), geolocation=(self '*')" />
+  <!-- Deklarasi Izin Android Hardware & Permissions-Policy untuk APK & WebView (Kodular & Chromium) -->
+  <meta http-equiv="Permissions-Policy" content="camera=*, geolocation=*, microphone=*" />
+  <meta http-equiv="Feature-Policy" content="camera *; geolocation *; microphone *" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="application-name" content="SiHADIR SIGMA 71" />
   <meta name="permissions" content="camera, geolocation" />
   <meta name="android-permissions" content="android.permission.CAMERA, android.permission.ACCESS_FINE_LOCATION, android.permission.ACCESS_COARSE_LOCATION" />
+  <meta name="android-permission" content="android.permission.CAMERA" />
+  <meta name="android-permission" content="android.permission.ACCESS_FINE_LOCATION" />
+  <meta name="android-permission" content="android.permission.ACCESS_COARSE_LOCATION" />
 
   <!-- PWA Manifest Data URI (Dengan Izin Kamera & Geolocation Eksplisit untuk Android APK Compiler) -->
   <link rel="manifest" href='data:application/manifest+json,{"name":"SiHADIR SIGMA 71 - Presensi Sekolah","short_name":"SiHADIR71","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","permissions":["camera","geolocation"],"features":["camera","geolocation"],"categories":["education","productivity"],"icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
@@ -1352,13 +1356,15 @@
     <!-- ========================================================== -->
     <div id="modal-camera-absensi" class="hidden fixed inset-0 z-50 bg-[#090A0F] text-white flex flex-col justify-between select-none">
       
-      <!-- Top Header Camera (Persis Gambar 1: Tombol ✕ di Kiri, Judul Absensi di Tengah) -->
+      <!-- Top Header Camera (Persis Gambar 1: Tombol ✕ di Kiri, Judul Absensi di Tengah, Tombol Putar Kamera di Kanan) -->
       <div class="bg-black/90 px-4 py-3.5 flex items-center justify-between z-20 border-b border-white/5">
         <button type="button" onclick="window.app.closeCameraModal()" class="text-white hover:text-slate-300 p-1 rounded-lg transition" title="Tutup Absensi">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
         <h3 id="camera-modal-title" class="text-[17px] font-bold tracking-tight text-white text-center">Absensi</h3>
-        <div class="w-8"></div>
+        <button type="button" onclick="window.app.toggleCameraFacingMode()" class="text-white hover:text-slate-300 p-1.5 rounded-lg transition bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Ganti Kamera Depan/Belakang">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
       </div>
 
       <!-- Area Tengah: Video Stream + Floating Instruction + Oval Frame + Bottom Bar -->
@@ -1394,6 +1400,37 @@
           <div id="camera-gps-status-row" class="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-2 text-xs text-slate-200">
             <div class="w-3.5 h-3.5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
             <span>Memvalidasi lokasi...</span>
+          </div>
+        </div>
+
+        <!-- Banner Interaktif Izin Akses Kamera (Tampil jika izin kamera belum aktif di Kodular APK / WebView) -->
+        <div id="camera-permission-alert" class="hidden relative z-30 w-full max-w-sm mx-auto bg-neutral-900/95 backdrop-blur-md rounded-2xl p-4 border border-amber-500/40 shadow-2xl text-center space-y-3">
+          <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <i data-lucide="camera" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div>
+            <h4 class="text-white font-bold text-sm">Izin Akses Kamera Diperlukan</h4>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Aplikasi membutuhkan izin kamera untuk verifikasi wajah. Ketuk tombol di bawah untuk mengaktifkan:
+            </p>
+          </div>
+          <div class="flex flex-col gap-2 pt-1">
+            <button
+              type="button"
+              onclick="window.app.requestCameraPermissionDirectly()"
+              class="w-full py-3 px-4 rounded-xl bg-brandteal-700 hover:bg-brandteal-600 active:scale-95 text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <i data-lucide="video" class="w-4 h-4"></i>
+              <span>Izinkan & Buka Kamera Live</span>
+            </button>
+            <button
+              type="button"
+              onclick="window.app.openNativeDeviceCamera(window.app.getCameraFacingMode())"
+              class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-2 border border-white/10 cursor-pointer"
+            >
+              <i data-lucide="camera" class="w-4 h-4"></i>
+              <span>Buka Kamera Bawaan HP (Native APK)</span>
+            </button>
           </div>
         </div>
 
@@ -3299,17 +3336,21 @@
       state.cameraMode = mode;
       const modal = document.getElementById('modal-camera-absensi');
       const titleEl = document.getElementById('camera-modal-title');
+      const permAlert = document.getElementById('camera-permission-alert');
 
       if (titleEl) {
         titleEl.textContent = (mode === 'enroll') ? 'Daftar Wajah' : 'Absensi';
       }
+
+      // Sembunyikan alert perizinan saat awal buka modal
+      if (permAlert) permAlert.classList.add('hidden');
 
       // Cek data presensi hari ini untuk menentukan status Masuk & Pulang otomatis
       if (mode === 'attendance') {
         const user = state.currentUser;
         const todayISO = getTodayISO();
         const existing = state.attendances.find(
-          a => (a.teacher_id === user?.id || a.teacher_id === user?.nip) && a.attendance_date === todayISO
+          a => (a.teacher_id === user?.id || a.teacher_id === user?.nip || a.teacher_id === user?.email) && a.attendance_date === todayISO
         );
 
         // Otomatis tentukan Masuk jika belum ada jam masuk hari ini, atau Pulang jika sudah absen masuk
@@ -3343,7 +3384,9 @@
       if (label) label.textContent = 'Tunggu Validasi Lokasi';
 
       if (modal) modal.classList.remove('hidden');
-      await startCameraStream();
+      
+      // Langsung aktifkan feed kamera dalam konteks interaksi pengguna
+      startCameraStream();
       validateCurrentGPSLocation();
       lucide.createIcons();
     }
@@ -3352,11 +3395,13 @@
       stopCameraStream();
       const modal = document.getElementById('modal-camera-absensi');
       const invModal = document.getElementById('modal-invalid-location');
+      const permAlert = document.getElementById('camera-permission-alert');
       if (modal) modal.classList.add('hidden');
       if (invModal) invModal.classList.add('hidden');
+      if (permAlert) permAlert.classList.add('hidden');
     }
 
-    // Helper Khusus Pembukaan Kamera Depan & Belakang Kompatibel Penuh Format APK & Android WebView
+    // Helper Khusus Pembukaan Kamera Depan & Belakang Kompatibel Penuh Format APK & Android WebView (Kodular)
     async function requestCameraMedia(facingMode = 'user') {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         const legacyGUM = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
@@ -3368,9 +3413,9 @@
         throw new Error('navigator.mediaDevices.getUserMedia tidak didukung di perangkat ini');
       }
 
-      // TAHAP 1: Constraints yang paling stabil dan memicu prompt izin OS di Android APK WebView
+      // TAHAP 1: Constraints yang paling stabil dan memicu prompt izin OS di Android APK WebView Kodular tanpa batasan exact
       const directConstraints = [
-        { video: { facingMode: { exact: facingMode } }, audio: false },
+        { video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
         { video: { facingMode: facingMode }, audio: false },
         { video: { facingMode: { ideal: facingMode } }, audio: false },
         { video: true, audio: false }
@@ -3379,7 +3424,7 @@
       for (const c of directConstraints) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia(c);
-          if (stream) return stream;
+          if (stream && stream.getVideoTracks().length > 0) return stream;
         } catch (err) {
           console.warn('Direct getUserMedia attempt failed:', c, err);
         }
@@ -3417,6 +3462,7 @@
     async function startCameraStream() {
       const videoEl = document.getElementById('camera-video-el');
       const canvasEl = document.getElementById('camera-fallback-canvas');
+      const permAlert = document.getElementById('camera-permission-alert');
       if (!videoEl || !canvasEl) return false;
 
       stopCameraStream();
@@ -3446,6 +3492,7 @@
           videoEl.srcObject = stream;
           videoEl.classList.remove('hidden');
           canvasEl.classList.add('hidden');
+          if (permAlert) permAlert.classList.add('hidden');
 
           if (state.fallbackAnimId) {
             cancelAnimationFrame(state.fallbackAnimId);
@@ -3475,21 +3522,32 @@
         console.warn('Kamera otomatis belum terbuka di APK/WebView:', err);
       }
 
-      // Fallback animasi canvas tanpa dialog blocking
+      // Tampilkan fallback canvas dan banner bantuan izin kamera interaktif
       videoEl.classList.add('hidden');
       canvasEl.classList.remove('hidden');
+      if (permAlert) {
+        permAlert.classList.remove('hidden');
+        lucide.createIcons();
+      }
       startFallbackCameraCanvas(canvasEl);
       return false;
     }
 
-    async function retryCameraStream() {
+    async function requestCameraPermissionDirectly() {
+      const permAlert = document.getElementById('camera-permission-alert');
+      if (permAlert) permAlert.classList.add('hidden');
       showToast('Menghubungkan ke sensor kamera...', 'info');
       const ok = await startCameraStream();
       if (ok) {
         showToast(state.cameraFacingMode === 'user' ? 'Kamera Depan Berhasil Terbuka!' : 'Kamera Belakang Berhasil Terbuka!', 'success');
       } else {
+        if (permAlert) permAlert.classList.remove('hidden');
         showToast('Izin kamera belum aktif. Anda juga dapat memilih "Gunakan Kamera Bawaan HP" di bawah.', 'warning');
       }
+    }
+
+    async function retryCameraStream() {
+      await requestCameraPermissionDirectly();
     }
 
     async function toggleCameraFacingMode() {
@@ -3497,6 +3555,15 @@
       showToast(state.cameraFacingMode === 'user' ? 'Mengalihkan ke Kamera Depan (Selfie)...' : 'Mengalihkan ke Kamera Belakang...', 'info');
       await startCameraStream();
     }
+
+    // Listener Global untuk Integrasi Blok Kodular Creator (when Screen1.PermissionGranted)
+    window.onKodularPermissionResult = function(permission, granted) {
+      if (permission && permission.includes('CAMERA') && granted) {
+        startCameraStream().then(ok => {
+          if (ok) showToast('Izin kamera Kodular disetujui! Kamera aktif.', 'success');
+        });
+      }
+    };
 
     // Pemicu Langsung Kamera Native HP Android (100% Didukung di Seluruh HP & Tablet Format APK)
     function openNativeDeviceCamera(facingMode = 'user') {
@@ -3805,9 +3872,32 @@
       try {
         // Pastikan teacher memiliki UUID valid di Supabase tabel teachers
         const validTeacherId = await ensureTeacherInSupabase(user);
+        if (validTeacherId) {
+          user.id = validTeacherId;
+          state.currentUser.id = validTeacherId;
+        }
 
         // 1. MODE PENDAFTARAN WAJAH (Foto tersimpan & status langsung 'Sudah Rekam' di Admin & Profil)
         if (state.cameraMode === 'enroll') {
+          // Sinkronkan ke objek pengguna aktif
+          state.currentUser.face_registered = true;
+          state.currentUser.face_photo_url = snapshotDataUrl;
+          state.currentUser.avatar_url = snapshotDataUrl;
+
+          // Sinkronkan ke daftar guru lokal
+          const tIdx = state.teachers.findIndex(t => t.id === validTeacherId || t.id === user.id || t.nip === user.nip || t.email === user.email);
+          if (tIdx !== -1) {
+            state.teachers[tIdx].face_registered = true;
+            state.teachers[tIdx].face_photo_url = snapshotDataUrl;
+            state.teachers[tIdx].avatar_url = snapshotDataUrl;
+          }
+
+          closeCameraModal();
+          renderGuruHeaderAndButton();
+          populateGuruProfileForm();
+          renderAdminAllTables();
+          showToast('Wajah berhasil direkam! Status biometrik otomatis "Sudah Rekam" di profil dan admin.', 'success');
+
           if (!IS_PREVIEW && supabase && validTeacherId) {
             try {
               await supabase
@@ -3822,25 +3912,6 @@
               console.warn('Gagal sinkron pendaftaran wajah ke Supabase:', e);
             }
           }
-
-          // Sinkronkan ke objek pengguna aktif
-          state.currentUser.face_registered = true;
-          state.currentUser.face_photo_url = snapshotDataUrl;
-          state.currentUser.avatar_url = snapshotDataUrl;
-
-          // Sinkronkan ke daftar guru lokal
-          const tIdx = state.teachers.findIndex(t => t.id === validTeacherId || t.id === user.id || t.nip === user.nip);
-          if (tIdx !== -1) {
-            state.teachers[tIdx].face_registered = true;
-            state.teachers[tIdx].face_photo_url = snapshotDataUrl;
-            state.teachers[tIdx].avatar_url = snapshotDataUrl;
-          }
-
-          closeCameraModal();
-          renderGuruHeaderAndButton();
-          populateGuruProfileForm();
-          renderAdminAllTables();
-          showToast('Wajah berhasil direkam! Status biometrik otomatis "Sudah Rekam" di admin dan profil.', 'success');
           return;
         }
 
@@ -3872,219 +3943,144 @@
         const nowHMS = getCurrentTimeHMS();
         const todaySchedule = getTodaySchedule();
 
-        // Cari apakah sudah ada data presensi hari ini untuk guru ini (HANYA 1 DATA)
+        // Cari apakah sudah ada data presensi hari ini untuk guru ini (HANYA 1 DATA PER HARI)
         let existing = state.attendances.find(
           a => (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip || a.teacher_id === user.email) && a.attendance_date === todayISO
         );
 
         if (targetType === 'masuk') {
           const dynamicStatus = evaluateAttendanceStatus(nowHMS, todaySchedule);
+          const recId = existing?.id || generateUUID();
+          const checkOutRef = existing?.check_out_time || null;
+          const workDur = checkOutRef ? formatDuration(nowHMS, checkOutRef) : 'Sedang bertugas';
+          const finalStatus = (checkOutRef && dynamicStatus !== 'Terlambat') ? 'Lengkap' : dynamicStatus;
+          const finalNotes = checkOutRef ? 'Presensi Masuk & Pulang Lengkap' : 'Presensi Masuk (Biometrik Wajah)';
 
-          if (existing) {
-            // Jika sudah ada data, UPDATE data yang ada (TIDAK MENAMBAH BARIS BARU)
-            existing.check_in_time = nowHMS;
-            existing.status = dynamicStatus;
-            existing.distance_meters = state.gpsValidation.distanceMeters;
-            existing.notes = 'Presensi Masuk (Biometrik Wajah)';
-            if (existing.check_out_time) {
-              existing.work_duration = formatDuration(nowHMS, existing.check_out_time);
-              if (dynamicStatus !== 'Terlambat') existing.status = 'Lengkap';
-            }
+          const rec = {
+            id: recId,
+            teacher_id: validTeacherId,
+            attendance_date: todayISO,
+            check_in_time: nowHMS,
+            check_out_time: checkOutRef,
+            work_duration: workDur,
+            status: finalStatus,
+            notes: finalNotes,
+            lat_in: state.gpsValidation.userLat,
+            lng_in: state.gpsValidation.userLng,
+            distance_meters: state.gpsValidation.distanceMeters || 0,
+            face_score: 98.6
+          };
 
-            if (!IS_PREVIEW && supabase) {
-              try {
-                await supabase.from('attendances').update({
-                  check_in_time: nowHMS,
-                  status: existing.status,
-                  work_duration: existing.work_duration,
-                  notes: existing.notes,
-                  distance_meters: existing.distance_meters
-                }).eq('teacher_id', validTeacherId).eq('attendance_date', todayISO);
-              } catch (e) {
-                console.warn('Update presensi masuk Supabase gagal:', e);
+          // Update local state langsung agar data absen langsung masuk dan tampilan terupdate tanpa delay
+          state.attendances = state.attendances.filter(a => !( (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip || a.teacher_id === user.email) && a.attendance_date === todayISO ));
+          state.attendances.unshift(rec);
+          state.attendances = deduplicateAttendances(state.attendances);
+
+          closeCameraModal();
+          renderGuruAttendanceList();
+          renderGuruHeaderAndButton();
+          renderAdminAllTables();
+          renderAdminCharts();
+          showToast(`Presensi Masuk berhasil dicatat pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
+
+          // Sinkronkan ke Supabase database
+          if (!IS_PREVIEW && supabase && validTeacherId) {
+            try {
+              const dbPayload = {
+                teacher_id: validTeacherId,
+                attendance_date: todayISO,
+                check_in_time: nowHMS,
+                check_out_time: checkOutRef,
+                work_duration: workDur,
+                status: finalStatus,
+                notes: finalNotes,
+                lat_in: state.gpsValidation.userLat,
+                lng_in: state.gpsValidation.userLng,
+                distance_meters: state.gpsValidation.distanceMeters || 0,
+                face_score: 98.6
+              };
+              const { data: upserted, error: upsertErr } = await supabase
+                .from('attendances')
+                .upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' })
+                .select()
+                .maybeSingle();
+
+              if (upserted && upserted.id) {
+                rec.id = upserted.id;
               }
-            }
-
-            state.attendances = deduplicateAttendances(state.attendances);
-            closeCameraModal();
-            renderGuruAttendanceList();
-            renderGuruHeaderAndButton();
-            renderAdminAllTables();
-            renderAdminCharts();
-            showToast(`Presensi Masuk diperbarui pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
-          } else {
-            // Presensi Masuk Baru (Hanya 1 kali insert)
-            const newUid = generateUUID();
-            const newRec = {
-              id: newUid,
-              teacher_id: validTeacherId,
-              attendance_date: todayISO,
-              check_in_time: nowHMS,
-              check_out_time: null,
-              work_duration: 'Sedang bertugas',
-              status: dynamicStatus,
-              notes: 'Presensi Masuk (Biometrik Wajah)',
-              lat_in: state.gpsValidation.userLat,
-              lng_in: state.gpsValidation.userLng,
-              distance_meters: state.gpsValidation.distanceMeters,
-              face_score: 98.6
-            };
-
-            if (!IS_PREVIEW && supabase) {
-              try {
-                const dbPayload = {
-                  teacher_id: validTeacherId,
-                  attendance_date: todayISO,
-                  check_in_time: nowHMS,
-                  check_out_time: null,
-                  work_duration: 'Sedang bertugas',
-                  status: dynamicStatus,
-                  notes: 'Presensi Masuk (Biometrik Wajah)',
-                  lat_in: state.gpsValidation.userLat,
-                  lng_in: state.gpsValidation.userLng,
-                  distance_meters: state.gpsValidation.distanceMeters,
-                  face_score: 98.6
-                };
-
-                const { data: inserted, error: insertErr } = await supabase
-                  .from('attendances')
-                  .upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' })
-                  .select()
-                  .single();
-
-                if (inserted && inserted.id) {
-                  newRec.id = inserted.id;
-                }
-                if (insertErr) {
-                  console.warn('Supabase upsert attendances warning:', insertErr);
-                }
-              } catch (e) {
-                console.warn('Simpan presensi masuk supabase error:', e);
+              if (upsertErr) {
+                console.warn('Supabase upsert presensi masuk warning:', upsertErr);
               }
+            } catch (e) {
+              console.warn('Simpan presensi masuk Supabase error:', e);
             }
-
-            // Hapus duplikat lokal jika ada, lalu masukkan data terbaru
-            state.attendances = state.attendances.filter(a => !( (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
-            state.attendances.unshift(newRec);
-            state.attendances = deduplicateAttendances(state.attendances);
-
-            closeCameraModal();
-            renderGuruAttendanceList();
-            renderGuruHeaderAndButton();
-            renderAdminAllTables();
-            renderAdminCharts();
-            showToast(`Presensi Masuk berhasil dicatat pukul ${nowHMS} (Status: ${dynamicStatus})`, dynamicStatus === 'Terlambat' ? 'warning' : 'success');
           }
         } else {
-          // TARGET TYPE === 'PULANG' (HANYA 1 DATA PER HARI)
-          if (existing) {
-            const checkInRef = existing.check_in_time || '07:30:00';
-            const duration = formatDuration(checkInRef, nowHMS);
-            const finalStatus = existing.status === 'Terlambat' ? 'Terlambat' : 'Lengkap';
+          // TARGET TYPE === 'PULANG'
+          const checkInRef = existing?.check_in_time || null;
+          const duration = checkInRef ? formatDuration(checkInRef, nowHMS) : '-';
+          const finalStatus = existing?.status === 'Terlambat' ? 'Terlambat' : (checkInRef ? 'Lengkap' : 'Pulang');
+          const finalNotes = checkInRef ? 'Presensi Masuk & Pulang Lengkap' : 'Hanya Presensi Pulang (Biometrik Wajah)';
+          const recId = existing?.id || generateUUID();
 
-            existing.check_out_time = nowHMS;
-            existing.work_duration = duration;
-            existing.status = finalStatus;
-            existing.notes = 'Presensi Masuk & Pulang Lengkap';
+          const rec = {
+            id: recId,
+            teacher_id: validTeacherId,
+            attendance_date: todayISO,
+            check_in_time: checkInRef,
+            check_out_time: nowHMS,
+            work_duration: duration,
+            status: finalStatus,
+            notes: finalNotes,
+            lat_in: existing?.lat_in || state.gpsValidation.userLat,
+            lng_in: existing?.lng_in || state.gpsValidation.userLng,
+            distance_meters: state.gpsValidation.distanceMeters || 0,
+            face_score: 98.6
+          };
 
-            if (!IS_PREVIEW && supabase) {
-              try {
-                const { data: updated } = await supabase.from('attendances').update({
-                  check_out_time: nowHMS,
-                  work_duration: duration,
-                  status: finalStatus,
-                  notes: existing.notes
-                }).eq('teacher_id', validTeacherId).eq('attendance_date', todayISO).select();
+          // Update local state langsung agar data absen langsung masuk dan tampilan terupdate tanpa delay
+          state.attendances = state.attendances.filter(a => !( (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip || a.teacher_id === user.email) && a.attendance_date === todayISO ));
+          state.attendances.unshift(rec);
+          state.attendances = deduplicateAttendances(state.attendances);
 
-                if (!updated || updated.length === 0) {
-                  const dbPayload = {
-                    teacher_id: validTeacherId,
-                    attendance_date: todayISO,
-                    check_in_time: existing.check_in_time || null,
-                    check_out_time: nowHMS,
-                    work_duration: duration,
-                    status: finalStatus,
-                    notes: existing.notes,
-                    lat_in: state.gpsValidation.userLat,
-                    lng_in: state.gpsValidation.userLng,
-                    distance_meters: state.gpsValidation.distanceMeters,
-                    face_score: 98.6
-                  };
-                  await supabase.from('attendances').upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' });
-                }
-              } catch (e) {
-                console.warn('Update presensi pulang Supabase gagal:', e);
+          closeCameraModal();
+          renderGuruAttendanceList();
+          renderGuruHeaderAndButton();
+          renderAdminAllTables();
+          renderAdminCharts();
+          showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}! Durasi kerja: ${duration}`, 'success');
+
+          // Sinkronkan ke Supabase database
+          if (!IS_PREVIEW && supabase && validTeacherId) {
+            try {
+              const dbPayload = {
+                teacher_id: validTeacherId,
+                attendance_date: todayISO,
+                check_in_time: checkInRef,
+                check_out_time: nowHMS,
+                work_duration: duration,
+                status: finalStatus,
+                notes: finalNotes,
+                lat_in: rec.lat_in,
+                lng_in: rec.lng_in,
+                distance_meters: rec.distance_meters,
+                face_score: 98.6
+              };
+              const { data: upserted, error: upsertErr } = await supabase
+                .from('attendances')
+                .upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' })
+                .select()
+                .maybeSingle();
+
+              if (upserted && upserted.id) {
+                rec.id = upserted.id;
               }
-            }
-
-            state.attendances = deduplicateAttendances(state.attendances);
-            closeCameraModal();
-            renderGuruAttendanceList();
-            renderGuruHeaderAndButton();
-            renderAdminAllTables();
-            renderAdminCharts();
-            showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}! Durasi kerja: ${duration}`, 'success');
-          } else {
-            // Guru langsung absen pulang tanpa absen masuk sebelumnya
-            const newUid = generateUUID();
-            const newRec = {
-              id: newUid,
-              teacher_id: validTeacherId,
-              attendance_date: todayISO,
-              check_in_time: null,
-              check_out_time: nowHMS,
-              work_duration: '-',
-              status: 'Pulang',
-              notes: 'Hanya Presensi Pulang (Biometrik Wajah)',
-              lat_in: state.gpsValidation.userLat,
-              lng_in: state.gpsValidation.userLng,
-              distance_meters: state.gpsValidation.distanceMeters,
-              face_score: 98.6
-            };
-
-            if (!IS_PREVIEW && supabase) {
-              try {
-                const dbPayload = {
-                  teacher_id: validTeacherId,
-                  attendance_date: todayISO,
-                  check_in_time: null,
-                  check_out_time: nowHMS,
-                  work_duration: '-',
-                  status: 'Pulang',
-                  notes: 'Hanya Presensi Pulang (Biometrik Wajah)',
-                  lat_in: state.gpsValidation.userLat,
-                  lng_in: state.gpsValidation.userLng,
-                  distance_meters: state.gpsValidation.distanceMeters,
-                  face_score: 98.6
-                };
-
-                const { data: inserted, error: insertErr } = await supabase
-                  .from('attendances')
-                  .upsert([dbPayload], { onConflict: 'teacher_id,attendance_date' })
-                  .select()
-                  .single();
-
-                if (inserted && inserted.id) {
-                  newRec.id = inserted.id;
-                }
-                if (insertErr) {
-                  console.warn('Supabase upsert pulang warning:', insertErr);
-                }
-              } catch (e) {
-                console.warn('Simpan presensi pulang Supabase error:', e);
+              if (upsertErr) {
+                console.warn('Supabase upsert presensi pulang warning:', upsertErr);
               }
+            } catch (e) {
+              console.warn('Simpan presensi pulang Supabase error:', e);
             }
-
-            state.attendances = state.attendances.filter(a => !( (a.teacher_id === validTeacherId || a.teacher_id === user.id || a.teacher_id === user.nip) && a.attendance_date === todayISO ));
-            state.attendances.unshift(newRec);
-            state.attendances = deduplicateAttendances(state.attendances);
-
-            closeCameraModal();
-            renderGuruAttendanceList();
-            renderGuruHeaderAndButton();
-            renderAdminAllTables();
-            renderAdminCharts();
-            showToast(`Presensi Pulang berhasil dicatat pukul ${nowHMS}`, 'success');
           }
         }
       } finally {
@@ -6065,6 +6061,8 @@
       closeCameraModal,
       toggleCameraFacingMode,
       retryCameraStream,
+      requestCameraPermissionDirectly,
+      getCameraFacingMode: () => state.cameraFacingMode || 'user',
       openNativeDeviceCamera,
       handleNativeCameraCapture,
       executeBiometricSnapshot,
