@@ -7,8 +7,17 @@
   <meta name="theme-color" content="#0F1E36" />
   <meta name="description" content="SiHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK Berbasis Pengenalan Wajah dan Lokasi GPS SMP Negeri 71 Bandung" />
 
-  <!-- PWA Manifest Data URI (1-File Mandate) -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"SiHADIR SIGMA 71 - Presensi Sekolah","short_name":"SiHADIR71","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
+  <!-- Deklarasi Izin Android Hardware & Permissions-Policy untuk APK & WebView -->
+  <meta http-equiv="Permissions-Policy" content="camera=(self '*'), microphone=(), geolocation=(self '*')" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="application-name" content="SiHADIR SIGMA 71" />
+  <meta name="permissions" content="camera, geolocation" />
+  <meta name="android-permissions" content="android.permission.CAMERA, android.permission.ACCESS_FINE_LOCATION, android.permission.ACCESS_COARSE_LOCATION" />
+
+  <!-- PWA Manifest Data URI (Dengan Izin Kamera & Geolocation Eksplisit untuk Android APK Compiler) -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"SiHADIR SIGMA 71 - Presensi Sekolah","short_name":"SiHADIR71","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","permissions":["camera","geolocation"],"features":["camera","geolocation"],"categories":["education","productivity"],"icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
 
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1372,27 +1381,37 @@
       <!-- Area Tengah: Video Stream + Floating Instruction + Oval Frame -->
       <div class="relative flex-1 flex flex-col items-center justify-between p-4 overflow-hidden">
         
+        <!-- Deklarasi Wajib Izin Hardware Kamera Android OS di APK (Compiler Detection) -->
+        <div style="display:none;" aria-hidden="true">
+          <input type="file" id="apk-native-camera-user" accept="image/*" capture="user" onchange="window.app.handleNativeCameraCapture(this, 'user')" />
+          <input type="file" id="apk-native-camera-env" accept="image/*" capture="environment" onchange="window.app.handleNativeCameraCapture(this, 'environment')" />
+        </div>
+
         <!-- Live Camera Video (Selfie Camera Support for Mobile & Tablet) -->
         <video id="camera-video-el" autoplay playsinline webkit-playsinline muted class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"></video>
         <canvas id="camera-fallback-canvas" class="hidden absolute inset-0 w-full h-full object-cover"></canvas>
 
         <!-- Overlay Prompt Buka & Izinkan Kamera Khusus APK Android & User Gesture Direct -->
-        <div id="camera-permission-prompt" class="hidden absolute inset-0 z-30 bg-black/80 flex flex-col items-center justify-center p-6 text-center">
-          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4 ring-8 ring-emerald-500/10">
+        <div id="camera-permission-prompt" class="hidden absolute inset-0 z-30 bg-black/85 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3 ring-8 ring-emerald-500/10">
             <i data-lucide="camera" class="w-8 h-8"></i>
           </div>
-          <h4 class="text-base font-extrabold text-white mb-1.5">Buka Akses Kamera</h4>
-          <p class="text-xs text-slate-300 max-w-xs mb-5 leading-relaxed">
-            Format APK Android memerlukan konfirmasi akses kamera. Ketuk tombol di bawah untuk membuka kamera depan/belakang secara langsung.
+          <h4 class="text-[17px] font-extrabold text-white mb-1">Izin Akses Kamera</h4>
+          <p class="text-xs text-slate-300 max-w-xs mb-4 leading-relaxed">
+            Format APK Android memerlukan izin akses kamera. Ketuk tombol di bawah agar notifikasi izin kamera otomatis muncul di HP Anda.
           </p>
           <div class="flex flex-col gap-2 w-full max-w-xs">
-            <button type="button" onclick="window.app.retryCameraStream()" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
+            <button type="button" onclick="window.app.retryCameraStream()" class="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
               <i data-lucide="camera" class="w-4 h-4"></i>
-              <span>Buka & Izinkan Kamera Sekarang</span>
+              <span>Aktifkan & Buka Kamera Sekarang</span>
             </button>
             <button type="button" onclick="window.app.toggleCameraFacingMode()" class="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
               <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
               <span>Putar Kamera Depan / Belakang</span>
+            </button>
+            <button type="button" onclick="window.app.openNativeDeviceCamera(state.cameraFacingMode)" class="w-full py-2.5 px-4 rounded-xl bg-blue-600/80 hover:bg-blue-600 text-white font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer" title="Gunakan aplikasi kamera bawaan HP">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+              <span>Gunakan Kamera Bawaan HP (Native Intent)</span>
             </button>
           </div>
         </div>
@@ -1487,6 +1506,17 @@
           >
             <div id="capture-btn-spinner" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             <span id="capture-btn-label">Tunggu Validasi Lokasi</span>
+          </button>
+
+          <!-- Tombol Cadangan Kamera Bawaan HP Android (Native Intent) -->
+          <button
+            type="button"
+            onclick="window.app.openNativeDeviceCamera(state.cameraFacingMode)"
+            class="text-[11px] font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-1.5 mx-auto transition pt-0.5 cursor-pointer"
+            title="Gunakan kamera bawaan HP Android jika video tidak tampil"
+          >
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+            <span>Gunakan Kamera Bawaan HP (Jika Video Belum Tampil)</span>
           </button>
         </div>
 
@@ -3424,11 +3454,30 @@
         throw new Error('navigator.mediaDevices.getUserMedia tidak didukung di perangkat ini');
       }
 
-      // Deteksi perangkat kamera fisik (depan vs belakang) via enumerateDevices
-      let targetDeviceId = null;
+      // TAHAP 1: Langsung panggil getUserMedia tanpa jeda enumerateDevices
+      // Ini krusial di Android WebView agar sistem Android OS langsung memunculkan
+      // dialog notifikasi izin: "Izinkan SiHADIR mengambil gambar dan merekam video?"
+      const directConstraints = [
+        { video: { facingMode: { ideal: facingMode } }, audio: false },
+        { video: { facingMode: facingMode }, audio: false },
+        { video: true, audio: false }
+      ];
+
+      for (const c of directConstraints) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(c);
+          if (stream) return stream;
+        } catch (err) {
+          console.warn('Direct getUserMedia attempt failed:', c, err);
+        }
+      }
+
+      // TAHAP 2: Jika izin kamera sudah disetujui pengguna,
+      // kita dapat memilih kamera fisik depan/belakang secara spesifik melalui deviceId
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        let targetDeviceId = null;
         if (videoInputs.length > 0) {
           if (facingMode === 'environment') {
             const backDev = videoInputs.find(d => /back|rear|environment|belakang/i.test(d.label));
@@ -3440,30 +3489,17 @@
             else targetDeviceId = videoInputs[0].deviceId;
           }
         }
+        if (targetDeviceId) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { ideal: targetDeviceId } }, audio: false });
+            if (stream) return stream;
+          } catch (e) {}
+        }
       } catch (enumErr) {
         console.warn('Enumerate devices warning:', enumErr);
       }
 
-      // Daftar opsi constraints dari yang paling spesifik ke yang paling fleksibel (bebas OverconstrainedError di APK)
-      const constraintList = [];
-      if (targetDeviceId) {
-        constraintList.push({ video: { deviceId: { ideal: targetDeviceId } }, audio: false });
-        constraintList.push({ video: { deviceId: targetDeviceId }, audio: false });
-      }
-      constraintList.push({ video: { facingMode: { ideal: facingMode } }, audio: false });
-      constraintList.push({ video: { facingMode: facingMode }, audio: false });
-      constraintList.push({ video: true, audio: false });
-
-      let lastError = null;
-      for (const c of constraintList) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia(c);
-          if (stream) return stream;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-      throw lastError || new Error('Gagal membuka feed stream kamera');
+      throw new Error('Gagal membuka feed stream kamera');
     }
 
     async function startCameraStream() {
@@ -3523,7 +3559,7 @@
 
           const readyText = document.getElementById('camera-ready-text');
           if (readyText) {
-            readyText.textContent = state.cameraFacingMode === 'user' ? 'Kamera Depan Siap' : 'Kamera Belakang Siap';
+            readyText.textContent = state.cameraFacingMode === 'user' ? 'Kamera Depan Aktif' : 'Kamera Belakang Aktif';
           }
           lucide.createIcons();
           return true;
@@ -3550,7 +3586,7 @@
       if (ok) {
         showToast(state.cameraFacingMode === 'user' ? 'Kamera Depan Berhasil Terbuka!' : 'Kamera Belakang Berhasil Terbuka!', 'success');
       } else {
-        showToast('Pastikan izin kamera diizinkan di pengaturan aplikasi Android.', 'warning');
+        showToast('Izin kamera belum aktif. Anda juga dapat memilih "Gunakan Kamera Bawaan HP" di bawah.', 'warning');
       }
     }
 
@@ -3558,6 +3594,47 @@
       state.cameraFacingMode = state.cameraFacingMode === 'user' ? 'environment' : 'user';
       showToast(state.cameraFacingMode === 'user' ? 'Mengalihkan ke Kamera Depan (Selfie)...' : 'Mengalihkan ke Kamera Belakang...', 'info');
       await startCameraStream();
+    }
+
+    // Pemicu Langsung Kamera Native HP Android (100% Didukung di Seluruh HP & Tablet Format APK)
+    function openNativeDeviceCamera(facingMode = 'user') {
+      const inputId = facingMode === 'environment' ? 'apk-native-camera-env' : 'apk-native-camera-user';
+      const inputEl = document.getElementById(inputId);
+      if (inputEl) {
+        showToast(facingMode === 'user' ? 'Membuka Kamera Depan Bawaan HP...' : 'Membuka Kamera Belakang Bawaan HP...', 'info');
+        inputEl.click();
+      } else {
+        showToast('Input kamera native tidak ditemukan.', 'warning');
+      }
+    }
+
+    // Tangani Foto dari Kamera Bawaan HP Android (Native Intent)
+    function handleNativeCameraCapture(inputEl, facingMode) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+
+      showToast('Memproses foto dari kamera HP...', 'info');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = async () => {
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = 320;
+          tempCanvas.height = 320;
+          const ctx = tempCanvas.getContext('2d');
+          const minDim = Math.min(img.width, img.height);
+          const startX = (img.width - minDim) / 2;
+          const startY = (img.height - minDim) / 2;
+          ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, 320, 320);
+          const photoDataUrl = tempCanvas.toDataURL('image/jpeg', 0.88);
+
+          // Eksekusi proses penyimpanan foto (Presensi atau Pendaftaran Wajah)
+          await executeBiometricSnapshot(photoDataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      inputEl.value = ''; // Reset nilai input agar dapat digunakan kembali
     }
 
     function startFallbackCameraCanvas(canvas) {
@@ -3664,7 +3741,7 @@
       state.gpsValidation.distanceMeters = distMeters;
 
       const maxRadius = Number(state.systemSettings.radius_meters) || 40;
-      const isValid = distMeters <= maxRadius;
+      const isValid = state.cameraMode === 'enroll' || distMeters <= maxRadius;
       state.gpsValidation.valid = isValid;
 
       const statusRow = document.getElementById('camera-gps-status-row');
@@ -3678,7 +3755,7 @@
         if (statusRow) {
           statusRow.innerHTML = `
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="text-emerald-300 font-semibold">Radius Sesuai (${distMeters}m dari SMPN 71 Bandung)</span>
+            <span class="text-emerald-300 font-semibold">${state.cameraMode === 'enroll' ? 'Pendaftaran Wajah Siap (' + distMeters + 'm)' : 'Radius Sesuai (' + distMeters + 'm dari SMPN 71 Bandung)'}</span>
           `;
         }
         if (btnCapture) {
@@ -3701,7 +3778,9 @@
         if (label) {
           label.textContent = 'Cek Detail Lokasi';
         }
-        openInvalidLocationModal(distMeters, maxRadius);
+        if (state.cameraMode !== 'enroll') {
+          openInvalidLocationModal(distMeters, maxRadius);
+        }
       }
     }
 
@@ -3759,16 +3838,25 @@
     // Eksekusi Presensi Biometrik Wajah & Pendaftaran Wajah (1 Guru Hanya 1 Kali Presensi per Tanggal, Bebas Duplikasi)
     async function handleCaptureBiometric() {
       if (state.isCapturingBiometric) return;
+      const snapshotDataUrl = captureFaceSnapshot();
+      await executeBiometricSnapshot(snapshotDataUrl);
+    }
 
-      if (state.gpsValidation.checking) {
-        showToast('Mohon tunggu validasi lokasi selesai.', 'warning');
-        return;
-      }
+    // Fungsi Terpadu untuk Menyimpan Foto & Sinkronisasi Presensi (Baik dari Live Camera maupun Kamera Bawaan HP Android)
+    async function executeBiometricSnapshot(snapshotDataUrl) {
+      if (state.isCapturingBiometric) return;
 
-      if (!state.gpsValidation.valid) {
-        const maxRadius = Number(state.systemSettings.radius_meters) || 40;
-        openInvalidLocationModal(state.gpsValidation.distanceMeters, maxRadius);
-        return;
+      if (state.cameraMode !== 'enroll') {
+        if (state.gpsValidation.checking) {
+          showToast('Mohon tunggu validasi lokasi selesai.', 'warning');
+          return;
+        }
+
+        if (!state.gpsValidation.valid) {
+          const maxRadius = Number(state.systemSettings.radius_meters) || 40;
+          openInvalidLocationModal(state.gpsValidation.distanceMeters, maxRadius);
+          return;
+        }
       }
 
       const user = state.currentUser;
@@ -3786,8 +3874,6 @@
       if (label) label.textContent = 'Menyimpan & Menyinkronkan...';
 
       try {
-        const snapshotDataUrl = captureFaceSnapshot();
-
         // Pastikan teacher memiliki UUID valid di Supabase tabel teachers
         const validTeacherId = await ensureTeacherInSupabase(user);
 
@@ -6047,6 +6133,9 @@
       closeCameraModal,
       toggleCameraFacingMode,
       retryCameraStream,
+      openNativeDeviceCamera,
+      handleNativeCameraCapture,
+      executeBiometricSnapshot,
       closeInvalidLocationModal,
       retryLocationValidation,
       handleCaptureBiometric,
