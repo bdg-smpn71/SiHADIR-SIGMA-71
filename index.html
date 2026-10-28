@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SIHADIR SIGMA 71</title>
+  <title>SiHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK</title>
   <meta name="theme-color" content="#0F1E36" />
-  <meta name="description" content="Sistem Informasi Kehadiran PTK" />
+  <meta name="description" content="SiHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK Berbasis Pengenalan Wajah dan Lokasi GPS SMP Negeri 71 Bandung" />
 
   <!-- PWA Manifest Data URI (1-File Mandate) -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"SIHADIR SIGMA 71 - Sistem Informasi Kehadiran PTK","short_name":"GercepAsik","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
+  <link rel="manifest" href='data:application/manifest+json,{"name":"SiHADIR SIGMA 71 - Presensi Sekolah","short_name":"SiHADIR71","start_url":".","display":"standalone","background_color":"#F4F7FA","theme_color":"#0F1E36","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3135/3135715.png","sizes":"512x512","type":"image/png"}]}' />
 
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -197,43 +197,78 @@
     <div id="view-login" class="flex-1 flex flex-col items-center justify-center px-5 py-8 min-h-screen relative">
       <div class="w-full max-w-[390px] mx-auto flex flex-col items-center text-center">
 
-        <!-- Judul Aplikasi -->
-        <h1 id="login-app-title" class="text-[30px] font-extrabold text-navy-900 tracking-tight mb-5">
-          Gercep Asik
+        <!-- Judul Aplikasi (Persis Gambar 1) -->
+        <h1 id="login-app-title" class="text-[30px] font-extrabold text-navy-900 tracking-tight mb-4">
+          SIHADIR SIGMA 71
         </h1>
 
-        <!-- Logo Aplikasi (Gaya GO / Custom URL) -->
-        <div class="mb-5 flex items-center justify-center">
-          <div id="login-logo-default" class="w-36 h-24 flex items-center justify-center relative">
-            <svg viewBox="0 0 220 120" class="w-full h-full drop-shadow-sm">
+        <!-- Logo SiHADIR SIGMA 71 (Persis Gambar 1) -->
+        <div class="mb-4 flex items-center justify-center">
+          <div id="login-logo-default" class="w-40 h-28 flex items-center justify-center relative">
+            <svg viewBox="0 0 160 120" class="w-full h-full drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="goGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#F97316" />
-                  <stop offset="100%" stop-color="#F59E0B" />
+                <linearGradient id="phoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0284C7" />
+                  <stop offset="100%" stop-color="#1E40AF" />
                 </linearGradient>
-                <linearGradient id="goGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#EF4444" />
-                  <stop offset="100%" stop-color="#F59E0B" />
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F59E0B" />
+                  <stop offset="100%" stop-color="#D97706" />
                 </linearGradient>
               </defs>
-              <!-- Speed lines -->
-              <rect x="20" y="25" width="48" height="10" rx="3" fill="url(#goGrad1)" transform="skewX(-12)" />
-              <rect x="28" y="43" width="40" height="10" rx="3" fill="url(#goGrad1)" transform="skewX(-12)" />
-              <rect x="36" y="61" width="32" height="10" rx="3" fill="url(#goGrad1)" transform="skewX(-12)" />
-              <!-- G Letter -->
-              <path d="M115 25 C88 25, 72 42, 72 62 C72 82, 88 96, 112 96 C132 96, 144 84, 144 65 L144 56 L112 56 L112 68 L128 68 C126 78, 118 82, 110 82 C95 82, 87 73, 87 60 C87 47, 96 38, 112 38 C122 38, 128 42, 132 47 L143 37 C136 29, 126 25, 115 25 Z" fill="url(#goGrad1)" />
-              <!-- Q/O Loop with Bird/Runner Accent -->
-              <circle cx="156" cy="68" r="24" fill="none" stroke="url(#goGrad2)" stroke-width="13" />
-              <path d="M162 88 L178 110 L166 105 L160 114 Z" fill="#1E1B4B" />
-              <circle cx="163" cy="57" r="3.5" fill="#0284C7" />
+              
+              <!-- Dynamic Circular Motion Swoosh (Blue) -->
+              <path d="M 45 45 C 40 25, 65 10, 95 12 C 120 14, 132 32, 126 52 C 120 72, 98 84, 80 84" fill="none" stroke="url(#phoneGrad)" stroke-width="5.5" stroke-linecap="round" opacity="0.9" />
+              <path d="M 40 60 C 40 76, 55 86, 75 87" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" />
+
+              <!-- Smartphone Body (Rounded Rectangle) -->
+              <rect x="58" y="14" width="46" height="66" rx="8" fill="url(#phoneGrad)" stroke="#FFFFFF" stroke-width="1.8" />
+              <!-- Speaker & Camera -->
+              <circle cx="77" cy="18" r="1.2" fill="#FFFFFF" opacity="0.8" />
+              <line x1="80" y1="18" x2="86" y2="18" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity="0.8" />
+
+              <!-- Screen Display -->
+              <rect x="62" y="22" width="38" height="52" rx="4" fill="#F8FAFC" />
+
+              <!-- ID Card Inside Screen -->
+              <rect x="65" y="26" width="32" height="34" rx="3" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="0.8" />
+              <rect x="65" y="26" width="32" height="8" rx="2" fill="#0284C7" />
+              <!-- Avatar / Silhouette -->
+              <circle cx="75" cy="39" r="4" fill="#0284C7" />
+              <path d="M 68 49 C 68 45, 71 44, 75 44 C 79 44, 82 45, 82 49 Z" fill="#0284C7" />
+              <!-- Card Text Lines -->
+              <line x1="83" y1="38" x2="93" y2="38" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" />
+              <line x1="83" y1="42" x2="91" y2="42" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" />
+              <!-- Clock Badge at top right -->
+              <circle cx="91" cy="27" r="4.5" fill="#FFFFFF" stroke="#0284C7" stroke-width="1" />
+              <polyline points="91,24.5 91,27 93,27" fill="none" stroke="#0284C7" stroke-width="0.9" stroke-linecap="round" />
+
+              <!-- Big Golden Checkmark (Swoosh) -->
+              <path d="M 60 52 L 72 65 L 105 38" fill="none" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+              
+              <!-- Text Wordmark: SiHADIR -->
+              <g transform="translate(80, 98)">
+                <text x="0" y="0" text-anchor="middle" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-size="19" font-weight="900" font-style="italic">
+                  <tspan fill="#F59E0B">Si</tspan><tspan fill="#1E3A8A">HADIR</tspan>
+                </text>
+              </g>
+
+              <!-- Sub Wordmark: - SIGMA 71 - with orange lines -->
+              <g transform="translate(80, 111)">
+                <line x1="-52" y1="-3" x2="-33" y2="-3" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" />
+                <text x="0" y="0" text-anchor="middle" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-size="9" font-weight="900" fill="#1E40AF" letter-spacing="1">
+                  SIGMA 71
+                </text>
+                <line x1="33" y1="-3" x2="52" y2="-3" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" />
+              </g>
             </svg>
           </div>
           <img id="login-logo-custom" src="" alt="Logo Sekolah" class="hidden max-h-24 w-auto object-contain rounded-xl" onerror="this.classList.add('hidden'); document.getElementById('login-logo-default').classList.remove('hidden');" />
         </div>
 
-        <!-- Subtitle Login -->
-        <p id="login-app-subtitle" class="text-[15px] text-slate-600 font-medium leading-relaxed mb-6 px-2">
-          Masuk untuk melanjutkan ke layanan kepegawaian.
+        <!-- Subtitle Login (Persis Gambar 1) -->
+        <p id="login-app-subtitle" class="text-[15px] text-slate-600 font-semibold leading-relaxed mb-6 px-2">
+          Sistem Informasi Kehadiran PTK
         </p>
 
         <!-- Selector Peran Login (Guru vs Admin) -->
@@ -248,7 +283,7 @@
 
         <!-- Form Login -->
         <form id="form-login" onsubmit="window.app.handleLogin(event)" class="w-full space-y-3.5">
-          <!-- Input NIP/NUPTK / Email -->
+          <!-- Input NIP / Email -->
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
               <i data-lucide="id-card" class="w-5 h-5"></i>
@@ -316,10 +351,10 @@
           <span>Masuk dengan Google</span>
         </button>
 
-        <!-- Footer Teks -->
-        <div class="mt-8 text-xs text-slate-500 leading-relaxed space-y-3">
+        <!-- Footer Teks (Persis Gambar 1) -->
+        <div class="mt-8 text-xs text-slate-500 leading-relaxed space-y-2.5">
           <p>
-            Dengan melanjutkan, Anda menyetujui <a href="javascript:void(0)" onclick="window.app.showToast('Syarat & Ketentuan Layanan Kepegawaian Sekolah Modern berlaku.', 'info')" class="text-navy-900 font-bold underline">Syarat dan Ketentuan</a> kami.
+            Dengan melanjutkan, Anda menyetujui <a href="javascript:void(0)" onclick="window.app.showToast('Syarat & Ketentuan Layanan Kepegawaian SMPN 71 Bandung berlaku.', 'info')" class="text-navy-900 font-bold underline">Syarat dan Ketentuan</a> kami.
           </p>
           <p id="login-footer-org" class="text-slate-500 font-semibold">
             2026 SMP Negeri 71 Bandung • Sistem Informasi Guna Manajemen
@@ -335,8 +370,8 @@
     <div id="view-guru" class="hidden flex-1 flex flex-col min-h-screen bg-appbg pb-24">
       
       <!-- Top App Bar Guru -->
-      <header class="sticky top-0 z-30 bg-white border-b border-slate-100 px-4 py-3.5 shadow-sm">
-        <div class="max-w-md mx-auto flex items-center justify-between">
+      <header class="sticky top-0 z-30 bg-white border-b border-slate-100 px-4 sm:px-6 py-3.5 shadow-sm">
+        <div class="w-full max-w-xl md:max-w-4xl mx-auto flex items-center justify-between">
           <div class="flex items-center gap-3.5">
             <!-- Avatar Circle -->
             <div id="guru-header-avatar" class="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden text-slate-700 shrink-0">
@@ -362,8 +397,8 @@
         </div>
       </header>
 
-      <!-- Kontainer Utama Mobile Guru -->
-      <main class="flex-1 w-full max-w-md mx-auto px-4 pt-4 space-y-4">
+      <!-- Kontainer Utama Mobile & Tablet Guru -->
+      <main class="flex-1 w-full max-w-xl md:max-w-4xl mx-auto px-4 sm:px-6 pt-4 space-y-4">
 
         <!-- TAB 1: PRESENSI (BERANDA GURU - REF 2 & 3) -->
         <section id="guru-tab-presensi" class="space-y-4">
@@ -490,6 +525,28 @@
               <span id="profil-face-badge" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
                 <i data-lucide="scan-face" class="w-3.5 h-3.5"></i> Wajah Terdaftar
               </span>
+
+              <!-- Kartu Foto Referensi Biometrik Wajah (PNG/JPEG) -->
+              <div class="mt-4 w-full bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 flex items-center gap-3.5 text-left shadow-xs">
+                <div class="w-16 h-16 rounded-2xl bg-white border-2 border-brandteal-700/60 overflow-hidden shrink-0 shadow-xs flex items-center justify-center">
+                  <img id="profil-face-ref-img" src="" class="w-full h-full object-cover hidden" alt="Foto Referensi Wajah" />
+                  <div id="profil-face-ref-empty" class="text-slate-400 flex flex-col items-center justify-center">
+                    <i data-lucide="scan-face" class="w-6 h-6"></i>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <span class="text-xs font-extrabold text-navy-900">Referensi Wajah Biometrik</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">PNG/JPEG</span>
+                  </div>
+                  <p id="profil-face-ref-status" class="text-[11px] text-slate-500 truncate">
+                    Foto wajah aktif tersimpan sebagai acuan presensi
+                  </p>
+                  <button type="button" onclick="window.app.openCameraModal('enroll')" class="mt-1 text-[11px] font-bold text-brandteal-700 hover:text-brandteal-800 flex items-center gap-1">
+                    <i data-lucide="camera" class="w-3.5 h-3.5"></i> Rekam / Perbarui Wajah
+                  </button>
+                </div>
+              </div>
             </div>
 
             <form onsubmit="window.app.saveGuruProfile(event)" class="space-y-4">
@@ -527,9 +584,9 @@
 
       </main>
 
-      <!-- Bottom Navigation Bar Guru (5 Kolom) -->
-      <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 py-2 px-2 shadow-lg">
-        <div class="max-w-md mx-auto grid grid-cols-5 gap-1">
+      <!-- Bottom Navigation Bar Guru (5 Kolom - Responsive Mobile & Tablet) -->
+      <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 py-2 px-3 shadow-lg">
+        <div class="w-full max-w-xl md:max-w-4xl mx-auto grid grid-cols-5 gap-1">
           <button onclick="window.app.switchGuruTab('presensi')" id="nav-guru-presensi" class="flex flex-col items-center justify-center py-1 text-navy-900 font-bold transition">
             <i data-lucide="timer" class="w-6 h-6 mb-1 stroke-[2.2]"></i>
             <span class="text-[11px]">Presensi</span>
@@ -567,7 +624,7 @@
           </div>
           <div class="overflow-hidden">
             <h2 id="admin-sidebar-title" class="text-sm font-extrabold text-slate-900 truncate">SIHADIR SIGMA 71</h2>
-            <p class="text-[11px] text-slate-500 font-medium truncate">Selamat Datang</p>
+            <p class="text-[11px] text-slate-500 font-medium truncate">Panel Manajemen Sekolah</p>
           </div>
         </div>
 
@@ -605,30 +662,107 @@
 
       <!-- Area Konten Utama Admin -->
       <div class="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
-        <!-- Top Header Bar Admin (Persis Referensi 7) -->
-        <header class="bg-white border-b border-slate-200/80 px-5 py-3 flex items-center justify-between sticky top-0 z-20">
-          <div>
-            <h1 id="admin-top-title" class="text-sm font-extrabold text-slate-900">Konfigurasi Sistem</h1>
-            <p id="admin-top-date" class="text-[11px] text-slate-400 font-medium">Selasa, 27 Oktober 2026</p>
+        <!-- Top Header Bar Admin (Responsive Mobile, Tablet & Desktop) -->
+        <header class="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+          <div class="flex items-center gap-3">
+            <!-- Tombol Hamburger Menu Khusus Mobile / Tablet -->
+            <button type="button" onclick="window.app.toggleAdminMobileMenu()" class="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition" title="Buka Menu Admin">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div>
+              <h1 id="admin-top-title" class="text-sm font-extrabold text-slate-900 leading-tight">Dashboard & Grafik</h1>
+              <p id="admin-top-date" class="text-[11px] text-slate-400 font-medium">Memuat tanggal...</p>
+            </div>
           </div>
-          <div class="flex items-center gap-4">
-            <button onclick="window.app.showToast('Semua layanan Supabase dan Geofencing berjalan optimal.', 'success')" class="text-slate-400 hover:text-slate-600">
+          <div class="flex items-center gap-2 sm:gap-4">
+            <!-- Tombol Cepat Presensi Manual Guru (Header) -->
+            <button onclick="window.app.openManualAttendanceModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Input Presensi Absen Manual Guru">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">+ Absen Manual</span>
+              <span class="sm:hidden">+ Absen</span>
+            </button>
+            <button onclick="window.app.showToast('Semua layanan Supabase dan Geofencing berjalan optimal.', 'success')" class="text-slate-400 hover:text-slate-600 p-1.5">
               <i data-lucide="bell" class="w-4 h-4"></i>
             </button>
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
                 A
               </div>
-              <div class="hidden sm:block text-left leading-tight">
+              <div class="hidden md:block text-left leading-tight">
                 <p class="text-xs font-bold text-slate-800">Administrator</p>
-                <p class="text-[10px] text-slate-400">Kepala Tata Usaha</p>
+                <p class="text-[10px] text-slate-400">SMPN 71 Bandung</p>
               </div>
             </div>
+            <!-- Tombol Logout Mobile -->
+            <button onclick="window.app.handleLogout()" class="lg:hidden p-1.5 text-slate-400 hover:text-red-600 transition" title="Keluar Administrator">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
           </div>
         </header>
 
-        <!-- Kontainer Isi Halaman Admin -->
-        <main class="p-4 sm:p-6 max-w-[1400px] w-full mx-auto space-y-6">
+        <!-- Horizontal Scrollable Navigation Pills untuk Mobile / Tablet (7 Fitur Lengkap) -->
+        <div class="lg:hidden bg-white border-b border-slate-200 px-3 py-2 overflow-x-auto whitespace-nowrap flex items-center gap-1.5 sticky top-[57px] z-20 shadow-xs">
+          <button onclick="window.app.switchAdminTab('dashboard')" id="mob-admin-dashboard" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Dashboard
+          </button>
+          <button onclick="window.app.switchAdminTab('konfigurasi')" id="mob-admin-konfigurasi" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i> Konfigurasi
+          </button>
+          <button onclick="window.app.switchAdminTab('monitoring')" id="mob-admin-monitoring" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i> Monitoring
+          </button>
+          <button onclick="window.app.switchAdminTab('guru')" id="mob-admin-guru" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> Guru & Wajah
+          </button>
+          <button onclick="window.app.switchAdminTab('verifikasi')" id="mob-admin-verifikasi" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Dinas & Izin
+            <span id="admin-pending-badge-mob" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">0</span>
+          </button>
+          <button onclick="window.app.switchAdminTab('pengumuman')" id="mob-admin-pengumuman" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Pengumuman
+          </button>
+          <button onclick="window.app.switchAdminTab('laporan')" id="mob-admin-laporan" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Rekap & Laporan
+          </button>
+        </div>
+
+        <!-- Slide-Down Mobile Drawer Menu Admin -->
+        <div id="admin-mobile-drawer" class="hidden lg:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-1.5 shadow-md">
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Navigasi Fitur Admin</p>
+          <button onclick="window.app.switchAdminTab('dashboard'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-600"></i> Dashboard & Grafik
+          </button>
+          <button onclick="window.app.switchAdminTab('konfigurasi'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="settings" class="w-4 h-4 text-slate-600"></i> Konfigurasi Sistem
+          </button>
+          <button onclick="window.app.switchAdminTab('monitoring'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="clock" class="w-4 h-4 text-slate-600"></i> Monitoring Presensi
+          </button>
+          <button onclick="window.app.switchAdminTab('guru'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="users" class="w-4 h-4 text-slate-600"></i> Data Guru & Wajah
+          </button>
+          <button onclick="window.app.switchAdminTab('verifikasi'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <span class="flex items-center gap-3"><i data-lucide="check-square" class="w-4 h-4 text-slate-600"></i> Dinas Luar & Izin</span>
+            <span id="admin-pending-badge-drawer" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700">0</span>
+          </button>
+          <button onclick="window.app.switchAdminTab('pengumuman'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="megaphone" class="w-4 h-4 text-slate-600"></i> Pengumuman & Pesan
+          </button>
+          <button onclick="window.app.switchAdminTab('laporan'); window.app.toggleAdminMobileMenu(false);" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-slate-600"></i> Rekap & Laporan
+          </button>
+          <div class="pt-2 border-t border-slate-100 flex gap-2">
+            <button onclick="window.app.openManualAttendanceModal(); window.app.toggleAdminMobileMenu(false);" class="flex-1 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> + Absen Manual
+            </button>
+            <button onclick="window.app.handleLogout()" class="px-4 py-2 rounded-xl bg-red-50 text-red-600 font-bold text-xs flex items-center justify-center gap-1.5">
+              <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+            </button>
+          </div>
+        </div>
+
+        <!-- Kontainer Isi Halaman Admin (Responsive Full Width) -->
+        <main class="p-3 sm:p-6 max-w-[1400px] w-full mx-auto space-y-6">
 
           <!-- ================================================== -->
           <!-- SUB-VIEW ADMIN 0: DASHBOARD & GRAFIK MODERN        -->
@@ -644,7 +778,11 @@
                   Visualisasi performa kehadiran harian, tren mingguan, dan rekapitulasi status pegawai SMPN 71 Bandung.
                 </p>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="window.app.openManualAttendanceModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                  <span>+ Presensi Manual</span>
+                </button>
                 <button onclick="window.app.refreshAllData()" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
                   <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-blue-600"></i>
                   <span>Sinkronkan Data</span>
@@ -912,9 +1050,14 @@
                 <h2 class="text-xl font-extrabold text-slate-900">Monitoring Presensi Real-Time</h2>
                 <p class="text-xs text-slate-500">Pantau kehadiran guru, validasi radius GPS, dan skor kemiripan wajah hari ini.</p>
               </div>
-              <button onclick="window.app.refreshAllData()" class="self-start px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Muat Ulang Data
-              </button>
+              <div class="flex flex-wrap items-center gap-2">
+                <button onclick="window.app.openManualAttendanceModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i> + Presensi Absen Manual
+                </button>
+                <button onclick="window.app.refreshAllData()" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm transition">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Muat Ulang Data
+                </button>
+              </div>
             </div>
 
             <!-- Kartu Statistik Ringkas -->
@@ -1156,26 +1299,32 @@
         </main>
       </div>
 
-      <!-- Bottom Navigation Bar Admin (Tampil di Mobile) -->
-      <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 py-2 px-2 shadow-lg">
-        <div class="grid grid-cols-6 gap-1 max-w-md mx-auto">
-          <button onclick="window.app.switchAdminTab('dashboard')" class="flex flex-col items-center py-1 text-blue-600 font-bold text-[10px]">
-            <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i><span>Dash</span>
+      <!-- Bottom Navigation Bar Admin (Lengkap 7 Fitur + Logout untuk Mobile / Tablet) -->
+      <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 py-1.5 px-1 shadow-lg select-none">
+        <div class="w-full max-w-xl mx-auto overflow-x-auto whitespace-nowrap flex items-center justify-between gap-1 px-1">
+          <button onclick="window.app.switchAdminTab('dashboard')" id="bnav-admin-dashboard" class="flex flex-col items-center py-1 px-2 rounded-lg text-blue-600 font-bold text-[10px] shrink-0 transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i><span>Dashboard</span>
           </button>
-          <button onclick="window.app.switchAdminTab('konfigurasi')" class="flex flex-col items-center py-1 text-slate-500 font-medium text-[10px]">
-            <i data-lucide="settings" class="w-4 h-4 mb-0.5"></i><span>Setting</span>
+          <button onclick="window.app.switchAdminTab('konfigurasi')" id="bnav-admin-konfigurasi" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
+            <i data-lucide="settings" class="w-4 h-4 mb-0.5"></i><span>Konfigurasi</span>
           </button>
-          <button onclick="window.app.switchAdminTab('monitoring')" class="flex flex-col items-center py-1 text-slate-500 font-medium text-[10px]">
-            <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i><span>Monitor</span>
+          <button onclick="window.app.switchAdminTab('monitoring')" id="bnav-admin-monitoring" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
+            <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i><span>Monitoring</span>
           </button>
-          <button onclick="window.app.switchAdminTab('pengumuman')" class="flex flex-col items-center py-1 text-slate-500 font-medium text-[10px]">
-            <i data-lucide="megaphone" class="w-4 h-4 mb-0.5"></i><span>Pesan</span>
+          <button onclick="window.app.switchAdminTab('guru')" id="bnav-admin-guru" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
+            <i data-lucide="users" class="w-4 h-4 mb-0.5"></i><span>Guru & Muka</span>
           </button>
-          <button onclick="window.app.switchAdminTab('laporan')" class="flex flex-col items-center py-1 text-slate-500 font-medium text-[10px]">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4 mb-0.5"></i><span>Rekap</span>
+          <button onclick="window.app.switchAdminTab('verifikasi')" id="bnav-admin-verifikasi" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
+            <i data-lucide="check-square" class="w-4 h-4 mb-0.5"></i><span>Dinas & Izin</span>
           </button>
-          <button onclick="window.app.handleLogout()" class="flex flex-col items-center py-1 text-red-500 font-medium text-[10px]">
-            <i data-lucide="log-out" class="w-4 h-4 mb-0.5"></i><span>Keluar</span>
+          <button onclick="window.app.switchAdminTab('pengumuman')" id="bnav-admin-pengumuman" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
+            <i data-lucide="megaphone" class="w-4 h-4 mb-0.5"></i><span>Pengumuman</span>
+          </button>
+          <button onclick="window.app.switchAdminTab('laporan')" id="bnav-admin-laporan" class="flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 mb-0.5"></i><span>Rekap/PDF</span>
+          </button>
+          <button onclick="window.app.handleLogout()" class="flex flex-col items-center py-1 px-2 rounded-lg text-rose-500 font-medium text-[10px] shrink-0 transition hover:text-rose-700">
+            <i data-lucide="log-out" class="w-4 h-4 mb-0.5"></i><span>Logout</span>
           </button>
         </div>
       </nav>
@@ -1187,20 +1336,23 @@
     <!-- ========================================================== -->
     <div id="modal-camera-absensi" class="hidden fixed inset-0 z-50 bg-[#090A0F] text-white flex flex-col justify-between">
       
-      <!-- Top Header Camera (Persis Referensi 5) -->
-      <div class="bg-black px-5 py-4 flex items-center justify-between z-20">
+      <!-- Top Header Camera (Persis Referensi 5 + Tombol Flip Kamera) -->
+      <div class="bg-black px-5 py-3.5 flex items-center justify-between z-20">
         <button onclick="window.app.closeCameraModal()" class="text-white hover:text-slate-300 p-1">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
-        <h3 id="camera-modal-title" class="text-[18px] font-bold tracking-tight">Absensi</h3>
-        <div class="w-6"></div>
+        <h3 id="camera-modal-title" class="text-[17px] font-bold tracking-tight">Presensi Biometrik Wajah</h3>
+        <button onclick="window.app.toggleCameraFacingMode()" title="Putar Kamera Depan / Belakang" class="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center gap-1.5 text-xs font-bold transition">
+          <i data-lucide="switch-camera" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Putar Kamera</span>
+        </button>
       </div>
 
       <!-- Area Tengah: Video Stream + Floating Instruction + Oval Frame -->
       <div class="relative flex-1 flex flex-col items-center justify-between p-4 overflow-hidden">
         
-        <!-- Live Camera Video atau Fallback Simulation Canvas -->
-        <video id="camera-video-el" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"></video>
+        <!-- Live Camera Video (Selfie Camera Support for Mobile & Tablet) -->
+        <video id="camera-video-el" autoplay playsinline webkit-playsinline muted class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"></video>
         <canvas id="camera-fallback-canvas" class="hidden absolute inset-0 w-full h-full object-cover"></canvas>
 
         <!-- Panel Instruksi Mengambang di Atas (Persis Referensi 5) -->
@@ -1490,28 +1642,39 @@
         
         <!-- KOP SURAT RESMI PEMERINTAH KOTA BANDUNG • SMPN 71 BANDUNG -->
         <div class="flex items-center justify-between gap-4 pb-1">
-          <!-- Logo SMP Negeri 71 Kota Bandung -->
+          <!-- Logo Lambang Kota Bandung "GEMAH RIPAH WIBAWA MUKTI" (Persis Gambar 2) -->
           <div class="w-20 h-24 flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 100 115" class="w-20 h-auto shrink-0 drop-shadow-sm">
-              <defs>
-                <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#0284C7" />
-                  <stop offset="100%" stop-color="#0369A1" />
-                </linearGradient>
-                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#FCD34D" />
-                  <stop offset="100%" stop-color="#F59E0B" />
-                </linearGradient>
-              </defs>
-              <polygon points="50,2 96,22 84,86 50,110 16,86 4,22" fill="url(#goldGrad)" stroke="#B45309" stroke-width="2.5" />
-              <polygon points="50,10 88,27 78,80 50,100 22,80 12,27" fill="url(#shieldGrad)" stroke="#FFFFFF" stroke-width="2" />
-              <path d="M22,14 Q50,6 78,14 L74,22 Q50,15 26,22 Z" fill="#FEF08A" stroke="#B45309" stroke-width="0.8" />
-              <text x="50" y="19" font-family="'Plus Jakarta Sans', sans-serif" font-size="5" font-weight="900" fill="#78350F" text-anchor="middle">SMP NEGERI</text>
-              <text x="50" y="60" font-family="'Plus Jakarta Sans', sans-serif" font-size="34" font-weight="900" fill="#FFFFFF" text-anchor="middle" stroke="#0369A1" stroke-width="1.2">71</text>
-              <path d="M30,76 Q50,71 70,76 L68,82 Q50,77 32,82 Z" fill="#F8FAFC" stroke="#0F172A" stroke-width="1" />
-              <path d="M50,72 L50,81" stroke="#0F172A" stroke-width="1.2" />
-              <path d="M8,88 L20,83 L80,83 L92,88 L86,96 L50,91 L14,96 Z" fill="url(#goldGrad)" stroke="#B45309" stroke-width="1.5" />
-              <text x="50" y="91" font-family="'Plus Jakarta Sans', sans-serif" font-size="5.5" font-weight="900" fill="#78350F" text-anchor="middle">KOTA BANDUNG</text>
+            <svg viewBox="0 0 300 350" class="w-20 h-auto shrink-0 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+              <!-- Perisai Luar -->
+              <path d="M 50 30 L 250 30 L 250 200 C 250 260 150 300 150 300 C 150 300 50 260 50 200 Z" fill="#FEE500" stroke="#000000" stroke-width="4" stroke-linejoin="round"/>
+              
+              <!-- Bidang Hijau Benteng -->
+              <path d="M 85 150 L 115 95 L 185 95 L 215 150 Z" fill="#43A047" stroke="#000000" stroke-width="3"/>
+              
+              <!-- Tembok Benteng Putih Bergerigi -->
+              <path d="M 85 150 L 98 150 L 98 143 L 115 143 L 115 150 L 132 150 L 132 143 L 149 143 L 149 150 L 166 150 L 166 143 L 183 143 L 183 150 L 200 150 L 200 143 L 215 143 L 215 156 L 85 156 Z" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+              <rect x="85" y="156" width="130" height="7" fill="#000000" />
+              
+              <!-- Garis Pemisah Hitam Tengah -->
+              <line x1="50" y1="165" x2="250" y2="165" stroke="#000000" stroke-width="4"/>
+              
+              <!-- Area Bawah Perisai (Gelombang Air Biru-Putih) -->
+              <g>
+                <path d="M 50 166 L 250 166 L 250 200 C 250 260 150 300 150 300 C 150 300 50 260 50 200 Z" fill="#FFFFFF"/>
+                <path d="M 50 178 Q 75 168 100 178 T 150 178 T 200 178 T 250 178 L 250 188 Q 225 178 200 178 T 150 178 T 100 178 T 50 188 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+                <path d="M 50 203 Q 75 193 100 203 T 150 203 T 200 203 T 250 203 L 250 213 Q 225 203 200 203 T 150 203 T 100 203 T 50 213 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+                <path d="M 52 228 Q 75 218 100 228 T 150 228 T 200 228 T 248 228 L 244 238 Q 225 228 200 228 T 150 228 T 100 228 T 56 238 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+                <path d="M 68 253 Q 100 243 150 253 Q 200 243 232 253 L 222 263 Q 185 253 150 263 Q 115 253 78 263 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+                <path d="M 50 166 L 250 166 L 250 200 C 250 260 150 300 150 300 C 150 300 50 260 50 200 Z" fill="none" stroke="#000000" stroke-width="4"/>
+              </g>
+              
+              <!-- Pita Kuning Semboyan: GEMAH RIPAH WIBAWA MUKTI -->
+              <g>
+                <polygon points="40,290 65,290 65,330 40,330 15,310" fill="#FEE500" stroke="#000000" stroke-width="3" stroke-linejoin="round"/>
+                <polygon points="260,290 235,290 235,330 260,330 285,310" fill="#FEE500" stroke="#000000" stroke-width="3" stroke-linejoin="round"/>
+                <rect x="60" y="295" width="180" height="35" fill="#FEE500" stroke="#000000" stroke-width="3"/>
+                <text x="150" y="318" font-family="'Arial Black', 'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="900" fill="#000000" text-anchor="middle" letter-spacing="0.5">GEMAH RIPAH WIBAWA MUKTI</text>
+              </g>
             </svg>
           </div>
 
@@ -1533,22 +1696,22 @@
           <h2 id="print-doc-title" class="text-lg font-extrabold underline tracking-wide uppercase text-slate-950">
             RIWAYAT KEHADIRAN PEGAWAI
           </h2>
-          <p id="print-doc-period" class="text-xs text-slate-700 italic mt-1">Periode: Semua Periode</p>
+          <p id="print-doc-period" class="text-xs text-slate-700 italic mt-1">Tahun Ajaran 2026/2027</p>
         </div>
 
-        <!-- Kotak Informasi Pegawai (Persis Gambar) -->
+        <!-- Kotak Informasi Pegawai (Diisi Real-Time dari Data Rekapitulasi) -->
         <div class="border border-slate-300 rounded-xl p-4 my-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-800">
           <div class="space-y-1.5">
-            <div><strong>Nama Lengkap :</strong> <span id="print-emp-name" class="font-bold">Febby Febrianti, S.Pd., Gr</span></div>
-            <div><strong>NIP / NUPTK :</strong> <span id="print-emp-nip" class="font-mono font-bold">1547777678230092</span></div>
+            <div><strong>Nama Lengkap :</strong> <span id="print-emp-name" class="font-bold">-</span></div>
+            <div><strong>NIP / NUPTK :</strong> <span id="print-emp-nip" class="font-mono font-bold">-</span></div>
           </div>
           <div class="space-y-1.5">
-            <div><strong>Jabatan :</strong> <span id="print-emp-pos">Guru IPA</span></div>
+            <div><strong>Jabatan :</strong> <span id="print-emp-pos">-</span></div>
             <div><strong>Unit Kerja :</strong> <span id="print-emp-unit">SMP Negeri 71 Bandung</span></div>
           </div>
         </div>
 
-        <!-- Tabel Catatan Kehadiran (Persis Header Gambar) -->
+        <!-- Tabel Catatan Kehadiran (Diisi Real-Time dari Rekapitulasi Terbaru) -->
         <div class="overflow-x-auto my-4">
           <table class="w-full text-center border-collapse text-xs sm:text-[13px]">
             <thead>
@@ -1562,7 +1725,7 @@
               </tr>
             </thead>
             <tbody id="print-table-tbody" class="divide-y divide-black">
-              <!-- Rendered rows -->
+              <!-- Baris presensi real-time di-render dinamis oleh openPrintA4Modal() -->
             </tbody>
           </table>
         </div>
@@ -1683,7 +1846,93 @@
     </div>
 
     <!-- ========================================================== -->
-    <!-- 11. CUSTOM CONFIRMATION MODAL & TOAST NOTIFICATION         -->
+    <!-- 11. MODAL PRESENSI ABSEN MANUAL GURU (OLEH ADMIN)           -->
+    <!-- ========================================================== -->
+    <div id="modal-admin-manual-attendance" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+              <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-extrabold text-navy-900">Presensi Absen Manual Guru</h3>
+              <p class="text-[11px] text-slate-500">Pencatatan langsung oleh Admin • Tersinkron ke Semua Fitur</p>
+            </div>
+          </div>
+          <button onclick="window.app.closeManualAttendanceModal()" class="p-1 text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form onsubmit="window.app.saveManualAttendance(event)" class="space-y-3.5 text-left">
+          <!-- Pilih Guru -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pilih Guru / Pegawai</label>
+            <select id="manual-att-teacher" required class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600">
+              <!-- Diisi otomatis dari state.teachers -->
+            </select>
+          </div>
+
+          <!-- Tanggal & Status Kehadiran -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Presensi</label>
+              <input type="date" id="manual-att-date" required class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Status Kehadiran</label>
+              <select id="manual-att-status" onchange="window.app.handleManualStatusChange(this.value)" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600">
+                <option value="Hadir">Hadir (Tepat Waktu)</option>
+                <option value="Terlambat">Terlambat</option>
+                <option value="Dinas Luar">Dinas Luar</option>
+                <option value="WFA/H">WFA/H (Work From Home)</option>
+                <option value="Sakit">Sakit</option>
+                <option value="Izin">Izin Keperluan Khusus</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Jam Masuk & Jam Pulang -->
+          <div id="manual-time-container" class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jam Masuk</label>
+              <input type="time" id="manual-att-in-time" step="1" value="07:15:00" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jam Pulang</label>
+              <input type="time" id="manual-att-out-time" step="1" value="16:00:00" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-600" />
+            </div>
+          </div>
+
+          <!-- Keterangan / Catatan Admin -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Keterangan / Lokasi Tugas</label>
+            <input type="text" id="manual-att-notes" placeholder="Contoh: Input Manual Admin - Dispen Tugas Luar" value="Input Absen Manual oleh Admin" class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-600" />
+          </div>
+
+          <div class="bg-blue-50/70 rounded-2xl p-3 border border-blue-100 text-[11px] text-blue-900 space-y-1">
+            <p class="font-bold flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-blue-600"></i> Sinkronisasi Otomatis Real-Time:</p>
+            <ul class="list-disc list-inside text-blue-800 space-y-0.5">
+              <li>Langsung tampil di Dashboard & Grafik, Monitoring Presensi & Rekap/Laporan.</li>
+              <li>Langsung tampil pada akun Guru (Presensi, Dinas Luar atau WFA/H & Izin).</li>
+            </ul>
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2.5">
+            <button type="button" onclick="window.app.closeManualAttendanceModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5">
+              <i data-lucide="save" class="w-4 h-4"></i> Simpan Presensi Manual
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- 12. CUSTOM CONFIRMATION MODAL & TOAST NOTIFICATION        -->
     <!-- ========================================================== -->
     <div id="modal-custom-confirm" class="hidden fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
@@ -2136,8 +2385,8 @@
       const subtitleEl = document.getElementById('login-app-subtitle');
       const sideTitleEl = document.getElementById('admin-sidebar-title');
 
-      if (titleEl) titleEl.textContent = cfg.app_name || 'SIHADIR SIGMA 71';
-      if (subtitleEl) subtitleEl.textContent = cfg.app_subtitle || 'Masuk untuk melanjutkan ke layanan presensi.';
+      if (titleEl) titleEl.textContent = cfg.app_name || 'Gercep Asik';
+      if (subtitleEl) subtitleEl.textContent = cfg.app_subtitle || 'Masuk untuk melanjutkan ke layanan kepegawaian.';
       if (sideTitleEl) sideTitleEl.textContent = cfg.app_name || 'SIHADIR SIGMA 71';
 
       const customLogo = document.getElementById('login-logo-custom');
@@ -2162,6 +2411,11 @@
       const btnGuru = document.getElementById('tab-role-guru');
       const btnAdmin = document.getElementById('tab-role-admin');
       const inputId = document.getElementById('login-identifier');
+      const inputPwd = document.getElementById('login-password');
+
+      // Kosongkan isian saat berpindah role
+      if (inputId) inputId.value = '';
+      if (inputPwd) inputPwd.value = '';
 
       if (role === 'guru') {
         btnGuru.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all bg-white text-navy-900 shadow-sm flex items-center justify-center gap-1.5';
@@ -2189,8 +2443,10 @@
 
     async function handleLogin(event) {
       event.preventDefault();
-      const identifier = document.getElementById('login-identifier').value.trim();
-      const password = document.getElementById('login-password').value.trim();
+      const inputIdEl = document.getElementById('login-identifier');
+      const inputPwdEl = document.getElementById('login-password');
+      const identifier = inputIdEl.value.trim();
+      const password = inputPwdEl.value.trim();
 
       if (!identifier || !password) {
         showToast('Harap isi NIP/NUPTK atau Email dan Password.', 'warning');
@@ -2198,6 +2454,10 @@
       }
 
       if (IS_PREVIEW || !supabase) {
+        // Kosongkan form login otomatis
+        inputIdEl.value = '';
+        inputPwdEl.value = '';
+
         if (state.loginRole === 'admin') {
           quickLoginAdmin();
         } else {
@@ -2220,6 +2480,11 @@
             password: password
           });
           if (error) throw error;
+
+          // Kosongkan form login otomatis saat masuk
+          inputIdEl.value = '';
+          inputPwdEl.value = '';
+
           state.currentUser = { role: 'admin', email: data.user.email };
           await loadAllSupabaseData();
           openAdminDashboard();
@@ -2237,6 +2502,11 @@
             showToast('NIP/NUPTK atau Password Guru tidak ditemukan.', 'error');
             return;
           }
+
+          // Kosongkan form login otomatis saat masuk
+          inputIdEl.value = '';
+          inputPwdEl.value = '';
+
           await loadAllSupabaseData();
           loginAsGuruUser(data);
         }
@@ -2245,24 +2515,9 @@
       }
     }
 
-    // Google Login Modal & Handler
-    async function handleGoogleLogin() {
-      // 1. Coba OAuth Google resmi jika Supabase aktif di domain web
-      if (!IS_PREVIEW && supabase && window.location.protocol.startsWith('http')) {
-        try {
-          const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: window.location.origin + window.location.pathname
-            }
-          });
-          if (!error) return;
-        } catch (e) {
-          console.warn('OAuth redirect fallback ke modal akun Google:', e);
-        }
-      }
-
-      // 2. Selalu tampilkan dialog modal pemilih akun Google yang responsif
+    // Google Login Modal & Handler (Bebas Error 400 Provider Not Enabled)
+    function handleGoogleLogin() {
+      // Langsung buka modal pemilih akun Google terdaftar sekolah tanpa error OAuth provider
       const modal = document.getElementById('modal-google-login');
       if (modal) {
         modal.classList.remove('hidden');
@@ -2368,6 +2623,13 @@
         try { await supabase.auth.signOut(); } catch (e) {}
       }
       state.currentUser = null;
+
+      // Otomatis kosongkan isian user id dan password saat keluar
+      const inputId = document.getElementById('login-identifier');
+      const inputPwd = document.getElementById('login-password');
+      if (inputId) inputId.value = '';
+      if (inputPwd) inputPwd.value = '';
+
       document.getElementById('view-guru').classList.add('hidden');
       document.getElementById('view-admin').classList.add('hidden');
       document.getElementById('view-login').classList.remove('hidden');
@@ -2711,6 +2973,21 @@
         if (avatarIcon) avatarIcon.classList.remove('hidden');
       }
 
+      // Tampilkan Foto Referensi Biometrik Wajah (PNG/JPEG)
+      const refImg = document.getElementById('profil-face-ref-img');
+      const refNone = document.getElementById('profil-face-ref-none');
+      const facePhoto = user.face_photo_url || user.avatar_url || '';
+      if (facePhoto) {
+        if (refImg) {
+          refImg.src = facePhoto;
+          refImg.classList.remove('hidden');
+        }
+        if (refNone) refNone.classList.add('hidden');
+      } else {
+        if (refImg) refImg.classList.add('hidden');
+        if (refNone) refNone.classList.remove('hidden');
+      }
+
       const badge = document.getElementById('profil-face-badge');
       if (badge) {
         if (user.face_registered) {
@@ -2889,24 +3166,65 @@
     async function startCameraStream() {
       const videoEl = document.getElementById('camera-video-el');
       const canvasEl = document.getElementById('camera-fallback-canvas');
+      if (!videoEl || !canvasEl) return;
 
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: false
-          });
-          state.mediaStream = stream;
-          videoEl.srcObject = stream;
-          videoEl.classList.remove('hidden');
-          canvasEl.classList.add('hidden');
-          return;
+      stopCameraStream();
+
+      state.cameraFacingMode = state.cameraFacingMode || 'user'; // Default kamera depan (selfie)
+
+      // Sesuaikan orientasi cermin: hanya kamera depan (selfie) yang di-mirror
+      if (state.cameraFacingMode === 'user') {
+        videoEl.classList.add('scale-x-[-1]');
+      } else {
+        videoEl.classList.remove('scale-x-[-1]');
+      }
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Daftar konfigurasi constraints bertingkat untuk kompatibilitas penuh Android Chrome, iOS Safari, dan Tablet
+        const constraintOptions = [
+          { video: { facingMode: { ideal: state.cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+          { video: { facingMode: { exact: state.cameraFacingMode } }, audio: false },
+          { video: { facingMode: state.cameraFacingMode }, audio: false },
+          { video: true, audio: false }
+        ];
+
+        for (const constraints of constraintOptions) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            if (stream) {
+              state.mediaStream = stream;
+              videoEl.srcObject = stream;
+              videoEl.setAttribute('playsinline', '');
+              videoEl.setAttribute('webkit-playsinline', '');
+              videoEl.classList.remove('hidden');
+              canvasEl.classList.add('hidden');
+
+              // Jalankan pemutaran video secara aman di browser mobile/tablet
+              try {
+                await videoEl.play();
+              } catch (playErr) {
+                videoEl.onloadedmetadata = () => {
+                  videoEl.play().catch(() => {});
+                };
+              }
+              return;
+            }
+          } catch (e) {
+            // Lanjut ke opsi constraints berikutnya
+          }
         }
-      } catch (err) {}
+      }
 
+      // Fallback jika kamera perangkat tidak diizinkan atau tidak tersedia
       videoEl.classList.add('hidden');
       canvasEl.classList.remove('hidden');
       startFallbackCameraCanvas(canvasEl);
+    }
+
+    async function toggleCameraFacingMode() {
+      state.cameraFacingMode = state.cameraFacingMode === 'user' ? 'environment' : 'user';
+      showToast(state.cameraFacingMode === 'user' ? 'Kamera Depan (Selfie) Aktif' : 'Kamera Belakang Aktif', 'info');
+      await startCameraStream();
     }
 
     function startFallbackCameraCanvas(canvas) {
@@ -3082,16 +3400,20 @@
       const videoEl = document.getElementById('camera-video-el');
       const fallbackCanvas = document.getElementById('camera-fallback-canvas');
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = 160;
-      tempCanvas.height = 160;
+      tempCanvas.width = 320;
+      tempCanvas.height = 320;
       const ctx = tempCanvas.getContext('2d');
 
       if (!videoEl.classList.contains('hidden') && videoEl.videoWidth > 0) {
-        ctx.drawImage(videoEl, 0, 0, 160, 160);
+        // Ambil potongan tengah persegi (center-cropped square) berkualitas tinggi
+        const minDim = Math.min(videoEl.videoWidth, videoEl.videoHeight);
+        const startX = (videoEl.videoWidth - minDim) / 2;
+        const startY = (videoEl.videoHeight - minDim) / 2;
+        ctx.drawImage(videoEl, startX, startY, minDim, minDim, 0, 0, 320, 320);
       } else {
-        ctx.drawImage(fallbackCanvas, 0, 0, 160, 160);
+        ctx.drawImage(fallbackCanvas, 0, 0, 320, 320);
       }
-      return tempCanvas.toDataURL('image/jpeg', 0.75);
+      return tempCanvas.toDataURL('image/jpeg', 0.88);
     }
 
     // Eksekusi Presensi (Mendukung 2x Masuk & 2x Pulang dengan mengambil data terakhir)
@@ -3112,26 +3434,41 @@
 
       const snapshotDataUrl = captureFaceSnapshot();
 
-      // Mode Pendaftaran Wajah
+      // Mode Pendaftaran Wajah (Foto langsung tersimpan dan tampil sebagai referensi muka & foto profil)
       if (state.cameraMode === 'enroll') {
         if (!IS_PREVIEW && supabase) {
-          await supabase
-            .from('teachers')
-            .update({ face_registered: true, face_photo_url: snapshotDataUrl })
-            .eq('id', user.id);
+          try {
+            await supabase
+              .from('teachers')
+              .update({
+                face_registered: true,
+                face_photo_url: snapshotDataUrl,
+                avatar_url: snapshotDataUrl
+              })
+              .eq('id', user.id);
+          } catch (e) {
+            console.warn('Gagal sinkron pendaftaran wajah ke Supabase:', e);
+          }
         }
+
+        // Sinkronkan ke objek pengguna aktif
         state.currentUser.face_registered = true;
         state.currentUser.face_photo_url = snapshotDataUrl;
+        state.currentUser.avatar_url = snapshotDataUrl;
+
+        // Sinkronkan ke daftar guru lokal
         const tIdx = state.teachers.findIndex(t => t.id === user.id);
         if (tIdx !== -1) {
           state.teachers[tIdx].face_registered = true;
           state.teachers[tIdx].face_photo_url = snapshotDataUrl;
+          state.teachers[tIdx].avatar_url = snapshotDataUrl;
         }
 
         closeCameraModal();
         renderGuruHeaderAndButton();
         populateGuruProfileForm();
-        showToast('Wajah berhasil direkam! Anda siap melakukan Presensi.', 'success');
+        renderAdminAllTables();
+        showToast('Foto wajah berhasil tersimpan sebagai referensi biometrik muka dan profil Anda!', 'success');
         return;
       }
 
@@ -3643,6 +3980,18 @@
     // ====================================================
     // LOGIKA DASHBOARD ADMIN & TABEL-TABEL
     // ====================================================
+    function toggleAdminMobileMenu(force) {
+      const drawer = document.getElementById('admin-mobile-drawer');
+      if (!drawer) return;
+      if (typeof force === 'boolean') {
+        if (force) drawer.classList.remove('hidden');
+        else drawer.classList.add('hidden');
+      } else {
+        drawer.classList.toggle('hidden');
+      }
+      lucide.createIcons();
+    }
+
     function switchAdminTab(tabName) {
       state.activeAdminTab = tabName;
       const tabs = ['dashboard', 'konfigurasi', 'monitoring', 'guru', 'verifikasi', 'pengumuman', 'laporan'];
@@ -3662,13 +4011,20 @@
       tabs.forEach(t => {
         const sec = document.getElementById(`admin-tab-${t}`);
         const sideBtn = document.getElementById(`side-admin-${t}`);
+        const mobBtn = document.getElementById(`mob-admin-${t}`);
+        const bnavBtn = document.getElementById(`bnav-admin-${t}`);
+
         if (sec) {
           if (t === tabName) {
             sec.classList.remove('hidden');
             if (sideBtn) sideBtn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 transition';
+            if (mobBtn) mobBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition';
+            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center py-1 px-2 rounded-lg text-blue-600 font-bold text-[10px] shrink-0 transition';
           } else {
             sec.classList.add('hidden');
             if (sideBtn) sideBtn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition';
+            if (mobBtn) mobBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition hover:text-slate-900';
+            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center py-1 px-2 rounded-lg text-slate-500 font-medium text-[10px] shrink-0 transition hover:text-slate-800';
           }
         }
       });
@@ -3682,6 +4038,199 @@
       }
 
       renderAdminAllTables();
+    }
+
+    // ====================================================
+    // FITUR PRESENSI ABSEN MANUAL UNTUK GURU OLEH ADMIN
+    // ====================================================
+    function openManualAttendanceModal(prefillTeacherId = '') {
+      const modal = document.getElementById('modal-admin-manual-attendance');
+      const selectTeacher = document.getElementById('manual-att-teacher');
+      const inputDate = document.getElementById('manual-att-date');
+      const selectStatus = document.getElementById('manual-att-status');
+      const inputInTime = document.getElementById('manual-att-in-time');
+      const inputOutTime = document.getElementById('manual-att-out-time');
+      const inputNotes = document.getElementById('manual-att-notes');
+
+      if (!modal || !selectTeacher) return;
+
+      // Isi daftar guru secara dinamis
+      selectTeacher.innerHTML = state.teachers.map(t => `
+        <option value="${t.id}" ${t.id === prefillTeacherId ? 'selected' : ''}>
+          ${t.full_name} (${t.nip}) - ${t.position || 'Guru'}
+        </option>
+      `).join('');
+
+      inputDate.value = getTodayISO();
+      selectStatus.value = 'Hadir';
+      inputInTime.value = '07:15:00';
+      inputOutTime.value = '16:00:00';
+      inputNotes.value = 'Input Absen Manual oleh Admin';
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeManualAttendanceModal() {
+      const modal = document.getElementById('modal-admin-manual-attendance');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function handleManualStatusChange(newStatus) {
+      const inInput = document.getElementById('manual-att-in-time');
+      const outInput = document.getElementById('manual-att-out-time');
+      const notesInput = document.getElementById('manual-att-notes');
+
+      if (newStatus === 'Hadir') {
+        inInput.value = '07:15:00';
+        outInput.value = '16:00:00';
+        notesInput.value = 'Input Absen Manual oleh Admin';
+      } else if (newStatus === 'Terlambat') {
+        inInput.value = '07:45:00';
+        outInput.value = '16:00:00';
+        notesInput.value = 'Terlambat - Izin Manual oleh Admin';
+      } else if (newStatus === 'Dinas Luar') {
+        inInput.value = '07:30:00';
+        outInput.value = '16:00:00';
+        notesInput.value = 'Dinas Luar - Penugasan Resmi Disdik';
+      } else if (newStatus === 'WFA/H') {
+        inInput.value = '07:30:00';
+        outInput.value = '16:00:00';
+        notesInput.value = 'WFA/H - Penugasan Daring Resmi';
+      } else if (newStatus === 'Sakit') {
+        inInput.value = '';
+        outInput.value = '';
+        notesInput.value = 'Surat Keterangan Dokter';
+      } else if (newStatus === 'Izin') {
+        inInput.value = '';
+        outInput.value = '';
+        notesInput.value = 'Izin Keperluan Khusus';
+      }
+    }
+
+    async function saveManualAttendance(event) {
+      event.preventDefault();
+      const teacherId = document.getElementById('manual-att-teacher').value;
+      const attDate = document.getElementById('manual-att-date').value;
+      const statusVal = document.getElementById('manual-att-status').value;
+      const inTime = document.getElementById('manual-att-in-time').value || null;
+      const outTime = document.getElementById('manual-att-out-time').value || null;
+      const notes = document.getElementById('manual-att-notes').value.trim() || 'Presensi Manual';
+
+      if (!teacherId || !attDate) {
+        showToast('Pilih guru dan tanggal presensi.', 'warning');
+        return;
+      }
+
+      const teacherObj = state.teachers.find(t => t.id === teacherId) || { full_name: 'Guru', nip: '-' };
+
+      // Hitung durasi kerja
+      let durText = '-';
+      if (inTime && outTime) {
+        durText = formatDuration(inTime, outTime);
+      } else if (statusVal === 'Dinas Luar' || statusVal === 'WFA/H') {
+        durText = '8j 30m';
+      } else if (statusVal === 'Sakit' || statusVal === 'Izin') {
+        durText = '1 Hari Penuh';
+      }
+
+      // 1. Simpan atau perbarui di state.attendances
+      let existingAtt = state.attendances.find(a => a.teacher_id === teacherId && a.attendance_date === attDate);
+      if (existingAtt) {
+        existingAtt.status = statusVal;
+        existingAtt.check_in_time = inTime;
+        existingAtt.check_out_time = outTime;
+        existingAtt.work_duration = durText;
+        existingAtt.notes = notes;
+
+        if (!IS_PREVIEW && supabase) {
+          try {
+            await supabase.from('attendances').update({
+              status: statusVal,
+              check_in_time: inTime,
+              check_out_time: outTime,
+              work_duration: durText,
+              notes: notes
+            }).eq('id', existingAtt.id);
+          } catch (e) {
+            console.warn('Update attendance supabase error:', e);
+          }
+        }
+      } else {
+        const newAtt = {
+          id: 'att-man-' + Date.now(),
+          teacher_id: teacherId,
+          attendance_date: attDate,
+          check_in_time: inTime,
+          check_out_time: outTime,
+          work_duration: durText,
+          status: statusVal,
+          notes: notes,
+          distance_meters: 0,
+          face_score: 99.5
+        };
+
+        if (!IS_PREVIEW && supabase) {
+          try {
+            const { data } = await supabase.from('attendances').insert([newAtt]).select().single();
+            if (data) state.attendances.unshift(data);
+            else state.attendances.unshift(newAtt);
+          } catch (e) {
+            state.attendances.unshift(newAtt);
+          }
+        } else {
+          state.attendances.unshift(newAtt);
+        }
+      }
+
+      // 2. SINKRONISASI KE DINAS LUAR & WFA/H & IZIN (Jika status khusus)
+      if (['Dinas Luar', 'WFA/H', 'Sakit', 'Izin'].includes(statusVal)) {
+        let reqType = statusVal;
+        if (statusVal === 'WFA/H') reqType = 'WFA/H (Work From Anywhere/Home)';
+        else if (statusVal === 'Izin') reqType = 'Izin Keperluan Khusus';
+
+        let existingLeave = state.leaveRequests.find(l => l.teacher_id === teacherId && l.request_date === attDate);
+        if (existingLeave) {
+          existingLeave.request_type = reqType;
+          existingLeave.description = notes;
+          existingLeave.status = 'Diterima';
+          if (!IS_PREVIEW && supabase) {
+            try {
+              await supabase.from('leave_requests').update({
+                request_type: reqType,
+                description: notes,
+                status: 'Diterima'
+              }).eq('id', existingLeave.id);
+            } catch (e) {}
+          }
+        } else {
+          const newLeave = {
+            id: 'lv-man-' + Date.now(),
+            teacher_id: teacherId,
+            request_type: reqType,
+            request_date: attDate,
+            duration_type: 'Full',
+            description: notes,
+            status: 'Diterima'
+          };
+          if (!IS_PREVIEW && supabase) {
+            try {
+              await supabase.from('leave_requests').insert([newLeave]);
+            } catch (e) {}
+          }
+          state.leaveRequests.unshift(newLeave);
+        }
+      }
+
+      closeManualAttendanceModal();
+
+      // Render ulang seluruh tabel, grafik, monitoring, dan tampilan guru
+      renderAdminAllTables();
+      renderAdminCharts();
+      renderGuruAttendanceList();
+      renderGuruLeaveLists();
+
+      showToast(`Presensi manual untuk ${teacherObj.full_name} (${statusVal}) berhasil disimpan dan tersinkron ke semua fitur!`, 'success');
     }
 
     function populateAdminSystemConfigForm() {
@@ -4489,6 +5038,44 @@
       showToast('Laporan CSV berhasil diunduh.', 'success');
     }
 
+    // Helper Logo Lambang Kota Bandung ("GEMAH RIPAH WIBAWA MUKTI" Persis Gambar 2)
+    function getBandungCityLogoSVG() {
+      return `
+        <svg viewBox="0 0 300 350" class="w-20 h-auto shrink-0 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+          <!-- Perisai Luar -->
+          <path d="M 50 30 L 250 30 L 250 200 C 250 260 150 300 150 300 C 150 300 50 260 50 200 Z" fill="#FEE500" stroke="#000000" stroke-width="4" stroke-linejoin="round"/>
+          
+          <!-- Bidang Hijau Benteng -->
+          <path d="M 85 150 L 115 95 L 185 95 L 215 150 Z" fill="#43A047" stroke="#000000" stroke-width="3"/>
+          
+          <!-- Tembok Benteng Putih Bergerigi -->
+          <path d="M 85 150 L 98 150 L 98 143 L 115 143 L 115 150 L 132 150 L 132 143 L 149 143 L 149 150 L 166 150 L 166 143 L 183 143 L 183 150 L 200 150 L 200 143 L 215 143 L 215 156 L 85 156 Z" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+          <rect x="85" y="156" width="130" height="7" fill="#000000" />
+          
+          <!-- Garis Pemisah Hitam Tengah -->
+          <line x1="50" y1="165" x2="250" y2="165" stroke="#000000" stroke-width="4"/>
+          
+          <!-- Area Bawah Perisai (Gelombang Air Biru-Putih) -->
+          <g>
+            <path d="M 50 166 L 250 166 L 250 200 C 250 260 150 300 150 300 C 150 300 50 260 50 200 Z" fill="#FFFFFF"/>
+            <path d="M 50 178 Q 75 168 100 178 T 150 178 T 200 178 T 250 178 L 250 188 Q 225 178 200 178 T 150 178 T 100 178 T 50 188 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+            <path d="M 50 203 Q 75 193 100 203 T 150 203 T 200 203 T 250 203 L 250 213 Q 225 203 200 203 T 150 203 T 100 203 T 50 213 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+            <path d="M 52 228 Q 75 218 100 228 T 150 228 T 200 228 T 248 228 L 244 238 Q 225 228 200 228 T 150 228 T 100 228 T 56 238 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+            <path d="M 68 253 Q 100 243 150 253 Q 200 243 232 253 L 222 263 Q 185 253 150 263 Q 115 253 78 263 Z" fill="#00A0E9" stroke="#000000" stroke-width="2"/>
+            <path d="M 50 166 L 250 166 L 250 200 C 250 260 150 300 150 300 C 150 300 50 260 50 200 Z" fill="none" stroke="#000000" stroke-width="4"/>
+          </g>
+          
+          <!-- Pita Kuning Semboyan: GEMAH RIPAH WIBAWA MUKTI -->
+          <g>
+            <polygon points="40,290 65,290 65,330 40,330 15,310" fill="#FEE500" stroke="#000000" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="260,290 235,290 235,330 260,330 285,310" fill="#FEE500" stroke="#000000" stroke-width="3" stroke-linejoin="round"/>
+            <rect x="60" y="295" width="180" height="35" fill="#FEE500" stroke="#000000" stroke-width="3"/>
+            <text x="150" y="318" font-family="'Arial Black', 'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="900" fill="#000000" text-anchor="middle" letter-spacing="0.5">GEMAH RIPAH WIBAWA MUKTI</text>
+          </g>
+        </svg>
+      `;
+    }
+
     // 3. Modal Cetak PDF Format A4 Sesuai Gambar Resmi Terlampir (Presensi & Dinas Luar)
     function openPrintA4Modal(type = 'attendance') {
       const modal = document.getElementById('modal-print-a4-preview');
@@ -4503,7 +5090,7 @@
         if (!state.leaveRequests.length) {
           leaveRowsHtml = `
             <tr>
-              <td colspan="7" class="border border-black p-4 text-center text-slate-500 italic">Belum ada pengajuan dinas luar atau izin.</td>
+              <td colspan="7" class="border border-black p-5 text-center text-slate-500 italic">Belum ada pengajuan dinas luar atau izin tercatat. Data terbaru akan otomatis tampil real-time.</td>
             </tr>
           `;
         } else {
@@ -4524,26 +5111,19 @@
         }
 
         printableArea.innerHTML = `
-          <!-- KOP SURAT PEMERINTAH KOTA BANDUNG -->
+          <!-- KOP SURAT PEMERINTAH KOTA BANDUNG DENGAN LOGO RESMI GAMBAR 2 -->
           <div class="flex items-center gap-4 border-b-[3px] border-black pb-3">
-            <div class="w-20 h-20 shrink-0 flex items-center justify-center">
-              <svg class="w-18 h-18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 5 L88 22 L88 56 C88 78 50 95 50 95 C50 95 12 78 12 56 L12 22 Z" fill="#0284C7" stroke="#000" stroke-width="2"/>
-                <path d="M50 14 L80 27 L80 54 C80 72 50 86 50 86 C50 86 20 72 20 54 L20 27 Z" fill="#FACC15"/>
-                <circle cx="50" cy="45" r="16" fill="#FFFFFF" stroke="#000" stroke-width="1.5"/>
-                <text x="50" y="49" font-size="10" font-weight="900" text-anchor="middle" fill="#0F172A">71</text>
-                <rect x="18" y="72" width="64" height="11" rx="2" fill="#FACC15" stroke="#000" stroke-width="1.5"/>
-                <text x="50" y="80.5" font-size="7.5" font-weight="900" text-anchor="middle" fill="#000">KOTA BANDUNG</text>
-              </svg>
+            <div class="w-20 h-24 shrink-0 flex items-center justify-center">
+              ${getBandungCityLogoSVG()}
             </div>
-            <div class="flex-1 text-center pr-4">
-              <h3 class="text-[15px] font-extrabold uppercase tracking-wide leading-tight text-black">Pemerintah Kota Bandung</h3>
-              <h2 class="text-[17px] font-extrabold uppercase tracking-wide leading-tight text-black">Dinas Pendidikan</h2>
-              <h1 class="text-[20px] font-black uppercase tracking-wider leading-tight text-black">SMP Negeri 71 Bandung</h1>
-              <p class="text-[10px] text-black mt-0.5 leading-snug">
+            <div class="flex-1 text-center pr-4 leading-snug">
+              <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">PEMERINTAH KOTA BANDUNG</h3>
+              <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">DINAS PENDIDIKAN</h3>
+              <h2 class="text-xl sm:text-2xl font-black tracking-wider uppercase text-black mt-0.5">SMP NEGERI 71 BANDUNG</h2>
+              <p class="text-[11px] text-black mt-1">
                 Jl. Manglayang I No. 1, Palasari, Kec. Cibiru, Kota Bandung, Jawa Barat 40615
               </p>
-              <p class="text-[10px] text-black leading-snug font-medium">
+              <p class="text-[11px] text-black font-medium">
                 Email: smpn71bandung@gmail.com
               </p>
             </div>
@@ -4552,7 +5132,7 @@
           <!-- JUDUL DOKUMEN -->
           <div class="text-center my-6">
             <h2 class="text-[18px] font-black tracking-wide underline uppercase text-black">Rekapitulasi Pengajuan Dinas Luar & Izin / WFA</h2>
-            <p class="text-xs text-black mt-1 font-medium">Dokumen Resmi • Tanggal Cetak: ${todayDateStr}</p>
+            <p class="text-xs text-black mt-1 font-medium">Tahun Ajaran 2026/2027 • Tanggal Cetak: ${todayDateStr}</p>
           </div>
 
           <!-- TABEL DAFTAR PENGAJUAN RESMI -->
@@ -4592,7 +5172,7 @@
       }
 
       // CETAK DOKUMEN REKAPITULASI PRESENSI PEGAWAI (DEFAULT)
-      // Cari data pegawai yang dipilih dari filter laporan atau guru pertama
+      // Cari data pegawai yang dipilih dari filter laporan rekapitulasi atau guru aktif
       let targetTeacher = null;
       if (state.reportFilterTeacher !== 'all') {
         targetTeacher = state.teachers.find(t => t.id === state.reportFilterTeacher);
@@ -4600,21 +5180,25 @@
       if (!targetTeacher) {
         targetTeacher = state.currentUser?.role === 'guru'
           ? state.currentUser
-          : (state.teachers.find(t => t.nip === '1547777678230092') || state.teachers[0]);
+          : (state.teachers[0] || null);
       }
 
-      const teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher?.id);
+      let teacherAttendances = [];
+      if (targetTeacher) {
+        teacherAttendances = state.attendances.filter(a => a.teacher_id === targetTeacher.id);
+        if (state.reportFilterMonth !== 'all') {
+          teacherAttendances = teacherAttendances.filter(a => a.attendance_date.startsWith(state.reportFilterMonth));
+        }
+      }
 
       let rowsHtml = '';
       if (!teacherAttendances.length) {
+        // Kosongkan dari data dummy sebelumnya; data tampil real-time sesuai rekapan
         rowsHtml = `
           <tr>
-            <td class="border border-black p-2 text-center font-mono">2026-10-25</td>
-            <td class="border border-black p-2 text-center font-bold font-mono">07:15:00</td>
-            <td class="border border-black p-2 text-center">Hadir</td>
-            <td class="border border-black p-2 text-center">-</td>
-            <td class="border border-black p-2 text-center">-</td>
-            <td class="border border-black p-2 text-center">Kampus Utama</td>
+            <td colspan="6" class="border border-black p-6 text-center text-slate-500 italic">
+              Belum ada riwayat kehadiran tercatat untuk filter ini. Data presensi akan otomatis masuk dan tampil real-time saat presensi dilakukan atau diinput manual.
+            </td>
           </tr>
         `;
       } else {
@@ -4631,26 +5215,19 @@
       }
 
       printableArea.innerHTML = `
-        <!-- KOP SURAT PEMERINTAH KOTA BANDUNG -->
+        <!-- KOP SURAT PEMERINTAH KOTA BANDUNG DENGAN LOGO RESMI GAMBAR 2 -->
         <div class="flex items-center gap-4 border-b-[3px] border-black pb-3">
-          <div class="w-20 h-20 shrink-0 flex items-center justify-center">
-            <svg class="w-18 h-18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M50 5 L88 22 L88 56 C88 78 50 95 50 95 C50 95 12 78 12 56 L12 22 Z" fill="#0284C7" stroke="#000" stroke-width="2"/>
-              <path d="M50 14 L80 27 L80 54 C80 72 50 86 50 86 C50 86 20 72 20 54 L20 27 Z" fill="#FACC15"/>
-              <circle cx="50" cy="45" r="16" fill="#FFFFFF" stroke="#000" stroke-width="1.5"/>
-              <text x="50" y="49" font-size="10" font-weight="900" text-anchor="middle" fill="#0F172A">71</text>
-              <rect x="18" y="72" width="64" height="11" rx="2" fill="#FACC15" stroke="#000" stroke-width="1.5"/>
-              <text x="50" y="80.5" font-size="7.5" font-weight="900" text-anchor="middle" fill="#000">KOTA BANDUNG</text>
-            </svg>
+          <div class="w-20 h-24 shrink-0 flex items-center justify-center">
+            ${getBandungCityLogoSVG()}
           </div>
-          <div class="flex-1 text-center pr-4">
-            <h3 class="text-[15px] font-extrabold uppercase tracking-wide leading-tight text-black">Pemerintah Kota Bandung</h3>
-            <h2 class="text-[17px] font-extrabold uppercase tracking-wide leading-tight text-black">Dinas Pendidikan</h2>
-            <h1 class="text-[20px] font-black uppercase tracking-wider leading-tight text-black">SMP Negeri 71 Bandung</h1>
-            <p class="text-[10px] text-black mt-0.5 leading-snug">
+          <div class="flex-1 text-center pr-4 leading-snug">
+            <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">PEMERINTAH KOTA BANDUNG</h3>
+            <h3 class="text-base sm:text-lg font-bold tracking-wide uppercase text-black">DINAS PENDIDIKAN</h3>
+            <h2 class="text-xl sm:text-2xl font-black tracking-wider uppercase text-black mt-0.5">SMP NEGERI 71 BANDUNG</h2>
+            <p class="text-[11px] text-black mt-1">
               Jl. Manglayang I No. 1, Palasari, Kec. Cibiru, Kota Bandung, Jawa Barat 40615
             </p>
-            <p class="text-[10px] text-black leading-snug font-medium">
+            <p class="text-[11px] text-black font-medium">
               Email: smpn71bandung@gmail.com
             </p>
           </div>
@@ -4659,23 +5236,23 @@
         <!-- JUDUL DOKUMEN -->
         <div class="text-center my-6">
           <h2 class="text-[18px] font-black tracking-wide underline uppercase text-black">Riwayat Kehadiran Pegawai</h2>
-          <p class="text-xs text-black mt-1 font-medium">Periode: Semua Periode</p>
+          <p class="text-xs text-black mt-1 font-bold">Tahun Ajaran 2026/2027</p>
         </div>
 
-        <!-- KOTAK DATA PEGAWAI -->
+        <!-- KOTAK DATA PEGAWAI (REAL-TIME SESUAI FILTER REKAPITULASI) -->
         <div class="border-[1.5px] border-slate-300 rounded-xl p-3.5 mb-6 text-xs text-black">
           <div class="grid grid-cols-2 gap-y-2">
             <div>
               <span class="font-extrabold text-black">Nama Lengkap :</span>
-              <span class="font-bold ml-1">${targetTeacher?.full_name || 'Febby Febrianti, S.Pd., Gr'}</span>
+              <span class="font-bold ml-1">${targetTeacher ? targetTeacher.full_name : '-'}</span>
             </div>
             <div>
               <span class="font-extrabold text-black">Jabatan :</span>
-              <span class="font-medium ml-1">${targetTeacher?.position || 'Guru IPA'}</span>
+              <span class="font-medium ml-1">${targetTeacher ? (targetTeacher.position || 'Guru') : '-'}</span>
             </div>
             <div>
               <span class="font-extrabold text-black">NIP / NUPTK :</span>
-              <span class="font-mono font-bold ml-1">${targetTeacher?.nip || '1547777678230092'}</span>
+              <span class="font-mono font-bold ml-1">${targetTeacher ? targetTeacher.nip : '-'}</span>
             </div>
             <div>
               <span class="font-extrabold text-black">Unit Kerja :</span>
@@ -4684,7 +5261,7 @@
           </div>
         </div>
 
-        <!-- TABEL KEHADIRAN RESMI -->
+        <!-- TABEL KEHADIRAN RESMI (REAL-TIME TANPA DATA DUMMY BAWAAN) -->
         <table class="w-full border-collapse border border-black mb-12 text-black">
           <thead>
             <tr class="bg-slate-100 font-extrabold text-xs text-black">
@@ -4769,6 +5346,7 @@
       switchGuruTab,
       openCameraModal,
       closeCameraModal,
+      toggleCameraFacingMode,
       closeInvalidLocationModal,
       retryLocationValidation,
       handleCaptureBiometric,
@@ -4783,6 +5361,11 @@
       handleSendAnnouncement,
       deleteAnnouncement,
       switchAdminTab,
+      toggleAdminMobileMenu,
+      openManualAttendanceModal,
+      closeManualAttendanceModal,
+      handleManualStatusChange,
+      saveManualAttendance,
       toggleScheduleHoliday,
       updateScheduleTime,
       addHoliday,
