@@ -731,32 +731,6 @@
               </button>
             </div>
           </div>
-
-          <!-- Baris 2: Horizontal Scrollable Navigation Pills (7 Fitur Lengkap Mengalir Alami di Bawah Baris Judul) -->
-          <div class="lg:hidden border-t border-slate-100 bg-slate-50/80 px-2.5 py-1.5 overflow-x-auto whitespace-nowrap flex items-center gap-1.5 no-scrollbar">
-            <button onclick="window.app.switchAdminTab('dashboard')" id="mob-admin-dashboard" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Dashboard
-            </button>
-            <button onclick="window.app.switchAdminTab('konfigurasi')" id="mob-admin-konfigurasi" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="settings" class="w-3.5 h-3.5"></i> Konfigurasi
-            </button>
-            <button onclick="window.app.switchAdminTab('monitoring')" id="mob-admin-monitoring" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="clock" class="w-3.5 h-3.5"></i> Monitoring
-            </button>
-            <button onclick="window.app.switchAdminTab('guru')" id="mob-admin-guru" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="users" class="w-3.5 h-3.5"></i> Guru & Wajah
-            </button>
-            <button onclick="window.app.switchAdminTab('verifikasi')" id="mob-admin-verifikasi" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Dinas & Izin
-              <span id="admin-pending-badge-mob" class="ml-1 px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">0</span>
-            </button>
-            <button onclick="window.app.switchAdminTab('pengumuman')" id="mob-admin-pengumuman" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Pengumuman
-            </button>
-            <button onclick="window.app.switchAdminTab('laporan')" id="mob-admin-laporan" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition">
-              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Rekap & Laporan
-            </button>
-          </div>
         </header>
 
         <!-- Slide-Down Mobile Drawer Menu Admin -->
@@ -1332,29 +1306,41 @@
         </main>
       </div>
 
-      <!-- Bottom Navigation Bar Admin (5 Menu Grid Presisi Tanpa Terpotong untuk Mobile / Tablet) -->
-      <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 py-2 px-1 shadow-lg select-none pb-[max(0.6rem,env(safe-area-inset-bottom))]">
-        <div class="grid grid-cols-5 w-full max-w-lg mx-auto items-center">
+      <!-- Bottom Navigation Bar Admin (8 Menu: Dashboard, Konfigurasi, Monitoring, Guru & Wajah, Dinas & Izin, Pengumuman, Rekap & Laporan, Menu) -->
+      <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 shadow-lg select-none pb-[max(0.4rem,env(safe-area-inset-bottom))]">
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar w-full max-w-2xl mx-auto py-0.5">
           <!-- 1. Dashboard -->
-          <button onclick="window.app.switchAdminTab('dashboard')" id="bnav-admin-dashboard" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 font-bold text-[10px] transition">
-            <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i><span class="truncate">Dashboard</span>
+          <button onclick="window.app.switchAdminTab('dashboard')" id="bnav-admin-dashboard" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-blue-600 bg-blue-50 font-bold text-[10px] transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Dashboard</span>
           </button>
-          <!-- 2. Monitoring -->
-          <button onclick="window.app.switchAdminTab('monitoring')" id="bnav-admin-monitoring" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
-            <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i><span class="truncate">Monitoring</span>
+          <!-- 2. Konfigurasi -->
+          <button onclick="window.app.switchAdminTab('konfigurasi')" id="bnav-admin-konfigurasi" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="settings" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Konfigurasi</span>
           </button>
-          <!-- 3. Guru & Muka -->
-          <button onclick="window.app.switchAdminTab('guru')" id="bnav-admin-guru" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
-            <i data-lucide="users" class="w-4 h-4 mb-0.5"></i><span class="truncate">Guru/Muka</span>
+          <!-- 3. Monitoring -->
+          <button onclick="window.app.switchAdminTab('monitoring')" id="bnav-admin-monitoring" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="clock" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Monitoring</span>
           </button>
-          <!-- 4. Dinas & Izin -->
-          <button onclick="window.app.switchAdminTab('verifikasi')" id="bnav-admin-verifikasi" class="relative flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
-            <i data-lucide="check-square" class="w-4 h-4 mb-0.5"></i><span class="truncate">Dinas/Izin</span>
-            <span id="admin-pending-badge-bnav" class="hidden absolute top-0.5 right-2 px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[9px] font-bold">0</span>
+          <!-- 4. Guru & Wajah -->
+          <button onclick="window.app.switchAdminTab('guru')" id="bnav-admin-guru" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="users" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Guru & Wajah</span>
           </button>
-          <!-- 5. Menu Lengkap / Lainnya -->
-          <button onclick="window.app.toggleAdminMobileMenu()" id="bnav-admin-menu" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
-            <i data-lucide="layout-grid" class="w-4 h-4 mb-0.5"></i><span class="truncate">Menu</span>
+          <!-- 5. Dinas & Izin -->
+          <button onclick="window.app.switchAdminTab('verifikasi')" id="bnav-admin-verifikasi" class="relative shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="check-square" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Dinas & Izin</span>
+            <span id="admin-pending-badge-bnav" class="hidden absolute top-0.5 right-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[9px] font-bold">0</span>
+          </button>
+          <!-- 6. Pengumuman -->
+          <button onclick="window.app.switchAdminTab('pengumuman')" id="bnav-admin-pengumuman" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="megaphone" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Pengumuman</span>
+          </button>
+          <!-- 7. Rekap & Laporan -->
+          <button onclick="window.app.switchAdminTab('laporan')" id="bnav-admin-laporan" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Rekap & Laporan</span>
+          </button>
+          <!-- 8. Menu -->
+          <button onclick="window.app.toggleAdminMobileMenu()" id="bnav-admin-menu" class="shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800">
+            <i data-lucide="layout-grid" class="w-4 h-4 mb-0.5"></i><span class="whitespace-nowrap">Menu</span>
           </button>
         </div>
       </nav>
@@ -1364,123 +1350,61 @@
     <!-- ========================================================== -->
     <!-- 4. MODAL FULLSCREEN: KAMERA ABSENSI & WAJAH (REF 5)        -->
     <!-- ========================================================== -->
-    <div id="modal-camera-absensi" class="hidden fixed inset-0 z-50 bg-[#090A0F] text-white flex flex-col justify-between">
+    <div id="modal-camera-absensi" class="hidden fixed inset-0 z-50 bg-[#090A0F] text-white flex flex-col justify-between select-none">
       
-      <!-- Top Header Camera (Persis Referensi 5 + Tombol Flip Kamera) -->
-      <div class="bg-black px-5 py-3.5 flex items-center justify-between z-20">
-        <button onclick="window.app.closeCameraModal()" class="text-white hover:text-slate-300 p-1">
+      <!-- Top Header Camera (Persis Gambar 1: Tombol ✕ di Kiri, Judul Absensi di Tengah) -->
+      <div class="bg-black/90 px-4 py-3.5 flex items-center justify-between z-20 border-b border-white/5">
+        <button type="button" onclick="window.app.closeCameraModal()" class="text-white hover:text-slate-300 p-1 rounded-lg transition" title="Tutup Absensi">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
-        <h3 id="camera-modal-title" class="text-[17px] font-bold tracking-tight">Presensi Biometrik Wajah</h3>
-        <button onclick="window.app.toggleCameraFacingMode()" title="Putar Kamera Depan / Belakang" class="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center gap-1.5 text-xs font-bold transition">
-          <i data-lucide="switch-camera" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Putar Kamera</span>
-        </button>
+        <h3 id="camera-modal-title" class="text-[17px] font-bold tracking-tight text-white text-center">Absensi</h3>
+        <div class="w-8"></div>
       </div>
 
-      <!-- Area Tengah: Video Stream + Floating Instruction + Oval Frame -->
+      <!-- Area Tengah: Video Stream + Floating Instruction + Oval Frame + Bottom Bar -->
       <div class="relative flex-1 flex flex-col items-center justify-between p-4 overflow-hidden">
         
-        <!-- Deklarasi Wajib Izin Hardware Kamera Android OS di APK (Compiler Detection) -->
+        <!-- Deklarasi Wajib Izin Hardware Kamera Android OS di APK (Compiler Detection & Fallback) -->
         <div style="display:none;" aria-hidden="true">
           <input type="file" id="apk-native-camera-user" accept="image/*" capture="user" onchange="window.app.handleNativeCameraCapture(this, 'user')" />
           <input type="file" id="apk-native-camera-env" accept="image/*" capture="environment" onchange="window.app.handleNativeCameraCapture(this, 'environment')" />
         </div>
 
-        <!-- Live Camera Video (Selfie Camera Support for Mobile & Tablet) -->
+        <!-- Live Camera Video (Selfie Camera Support for Mobile & Tablet APK) -->
         <video id="camera-video-el" autoplay playsinline webkit-playsinline muted class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"></video>
         <canvas id="camera-fallback-canvas" class="hidden absolute inset-0 w-full h-full object-cover"></canvas>
 
-        <!-- Overlay Prompt Buka & Izinkan Kamera Khusus APK Android & User Gesture Direct -->
-        <div id="camera-permission-prompt" class="hidden absolute inset-0 z-30 bg-black/85 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200">
-          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3 ring-8 ring-emerald-500/10">
-            <i data-lucide="camera" class="w-8 h-8"></i>
-          </div>
-          <h4 class="text-[17px] font-extrabold text-white mb-1">Izin Akses Kamera</h4>
-          <p class="text-xs text-slate-300 max-w-xs mb-4 leading-relaxed">
-            Format APK Android memerlukan izin akses kamera. Ketuk tombol di bawah agar notifikasi izin kamera otomatis muncul di HP Anda.
-          </p>
-          <div class="flex flex-col gap-2 w-full max-w-xs">
-            <button type="button" onclick="window.app.retryCameraStream()" class="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
-              <i data-lucide="camera" class="w-4 h-4"></i>
-              <span>Aktifkan & Buka Kamera Sekarang</span>
-            </button>
-            <button type="button" onclick="window.app.toggleCameraFacingMode()" class="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
-              <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
-              <span>Putar Kamera Depan / Belakang</span>
-            </button>
-            <button type="button" onclick="window.app.openNativeDeviceCamera(state.cameraFacingMode)" class="w-full py-2.5 px-4 rounded-xl bg-blue-600/80 hover:bg-blue-600 text-white font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer" title="Gunakan aplikasi kamera bawaan HP">
-              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
-              <span>Gunakan Kamera Bawaan HP (Native Intent)</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Panel Instruksi Mengambang di Atas (Persis Referensi 5) -->
-        <div class="relative z-20 w-full max-w-md glass-dark rounded-2xl p-4 border border-white/10 shadow-xl">
+        <!-- Panel Instruksi Mengambang di Atas (Persis Gambar 1) -->
+        <div class="relative z-20 w-full max-w-sm mx-auto bg-neutral-900/85 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-xl">
           <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
-              <i data-lucide="smile-plus" class="w-5 h-5 text-white"></i>
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 mt-0.5 text-white">
+              <i data-lucide="smile" class="w-5 h-5"></i>
             </div>
-            <div class="text-left">
-              <h4 class="text-[15px] font-bold text-white leading-snug">
+            <div class="text-left flex-1 min-w-0">
+              <h4 class="text-[14px] sm:text-[15px] font-bold text-white leading-snug">
                 Posisikan wajah Anda di dalam frame
               </h4>
-              <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
                 Pastikan pencahayaan cukup dan wajah mengisi lingkaran
               </p>
             </div>
           </div>
 
           <!-- Status Validasi Lokasi GPS -->
-          <div class="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
-            <div id="camera-gps-status-row" class="flex items-center gap-2 text-xs text-slate-200">
-              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Memvalidasi lokasi GPS...</span>
-            </div>
-            <button
-              type="button"
-              onclick="window.app.retryLocationValidation()"
-              class="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[11px] font-bold text-white transition flex items-center gap-1"
-            >
-              <i data-lucide="refresh-cw" class="w-3 h-3"></i> Cek GPS
-            </button>
-          </div>
-
-          <!-- Pilihan Jenis Presensi (Masuk / Pulang - Ambil Waktu Absen Terakhir) -->
-          <div id="camera-att-type-selector" class="mt-2.5 pt-2 border-t border-white/10">
-            <p class="text-[11px] font-bold text-slate-300 mb-1.5 text-center">Target Presensi (Waktu Terakhir yang Disimpan):</p>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                id="btn-choice-masuk"
-                onclick="window.app.setAttendanceTargetType('masuk')"
-                class="py-2 px-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center bg-brandteal-700 text-white shadow-sm border border-emerald-400/40"
-              >
-                <span>Presensi Masuk</span>
-                <span id="label-last-masuk" class="text-[10px] font-normal text-emerald-200 mt-0.5">Belum Tercatat</span>
-              </button>
-              <button
-                type="button"
-                id="btn-choice-pulang"
-                onclick="window.app.setAttendanceTargetType('pulang')"
-                class="py-2 px-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center bg-white/10 text-slate-300 hover:text-white border border-white/10"
-              >
-                <span>Presensi Pulang</span>
-                <span id="label-last-pulang" class="text-[10px] font-normal text-slate-400 mt-0.5">Belum Tercatat</span>
-              </button>
-            </div>
+          <div id="camera-gps-status-row" class="mt-2.5 pt-2 border-t border-white/10 flex items-center gap-2 text-xs text-slate-200">
+            <div class="w-3.5 h-3.5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+            <span>Memvalidasi lokasi...</span>
           </div>
         </div>
 
-        <!-- Bingkai Elips Wajah dengan 4 Siku Sudut Putih (Persis Referensi 5) -->
+        <!-- Bingkai Elips Wajah dengan 4 Siku Sudut Putih (Persis Gambar 1) -->
         <div class="relative z-10 my-auto flex items-center justify-center">
           <div class="relative p-5">
             <!-- 4 Siku Sudut Putih (Corner Brackets) -->
-            <div class="absolute top-0 left-0 w-9 h-9 border-t-[3px] border-l-[3px] border-white"></div>
-            <div class="absolute top-0 right-0 w-9 h-9 border-t-[3px] border-r-[3px] border-white"></div>
-            <div class="absolute bottom-0 left-0 w-9 h-9 border-b-[3px] border-l-[3px] border-white"></div>
-            <div class="absolute bottom-0 right-0 w-9 h-9 border-b-[3px] border-r-[3px] border-white"></div>
+            <div class="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-white"></div>
+            <div class="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-white"></div>
+            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] border-white"></div>
+            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] border-white"></div>
 
             <!-- Lingkaran/Oval Wajah -->
             <div class="face-oval-guide">
@@ -1489,8 +1413,8 @@
           </div>
         </div>
 
-        <!-- Panel Bawah Kamera (Persis Referensi 5) -->
-        <div class="relative z-20 w-full max-w-md glass-dark rounded-3xl p-4 border border-white/10 shadow-xl text-center space-y-3">
+        <!-- Panel Bawah Kamera (Persis Gambar 1) -->
+        <div class="relative z-20 w-full max-w-sm mx-auto bg-neutral-900/85 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-xl text-center space-y-3">
           <div class="flex items-center justify-center gap-2 text-sm font-bold text-white">
             <span class="w-5 h-5 rounded-full bg-lime-400 text-slate-950 flex items-center justify-center">
               <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
@@ -1502,28 +1426,18 @@
             type="button"
             id="btn-capture-biometric"
             onclick="window.app.handleCaptureBiometric()"
-            class="w-full py-3.5 px-5 rounded-2xl bg-zinc-600 hover:bg-zinc-500 text-white font-bold text-sm transition flex items-center justify-center gap-2.5"
+            class="w-full py-3.5 px-5 rounded-xl bg-neutral-700 text-white font-bold text-sm transition flex items-center justify-center gap-2.5 cursor-not-allowed opacity-90"
+            disabled
           >
-            <div id="capture-btn-spinner" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div id="capture-btn-spinner" class="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
             <span id="capture-btn-label">Tunggu Validasi Lokasi</span>
-          </button>
-
-          <!-- Tombol Cadangan Kamera Bawaan HP Android (Native Intent) -->
-          <button
-            type="button"
-            onclick="window.app.openNativeDeviceCamera(state.cameraFacingMode)"
-            class="text-[11px] font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-1.5 mx-auto transition pt-0.5 cursor-pointer"
-            title="Gunakan kamera bawaan HP Android jika video tidak tampil"
-          >
-            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
-            <span>Gunakan Kamera Bawaan HP (Jika Video Belum Tampil)</span>
           </button>
         </div>
 
       </div>
 
       <!-- ========================================================== -->
-      <!-- 5. POPUP MODAL: LOKASI TIDAK VALID (PERSIS REFERENSI 6)    -->
+      <!-- 5. POPUP MODAL: LOKASI TIDAK VALID (PERSIS GAMBAR 2)       -->
       <!-- ========================================================== -->
       <div id="modal-invalid-location" class="hidden fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-5">
         <div class="bg-white text-slate-800 rounded-[28px] p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -1565,19 +1479,19 @@
             </ul>
           </div>
 
-          <!-- Tombol Batal & Coba Lagi -->
+          <!-- Tombol Batal & Coba Lagi (Persis Gambar 2) -->
           <div class="pt-4 flex items-center justify-end gap-6">
             <button
               type="button"
               onclick="window.app.closeInvalidLocationModal(true)"
-              class="text-[15px] font-extrabold text-navy-900 hover:opacity-75 transition"
+              class="text-[14px] sm:text-[15px] font-bold text-slate-500 hover:text-slate-800 transition"
             >
               Batal
             </button>
             <button
               type="button"
               onclick="window.app.retryLocationValidation()"
-              class="text-[15px] font-extrabold text-navy-900 hover:opacity-75 transition"
+              class="text-[14px] sm:text-[15px] font-bold text-blue-600 hover:text-blue-700 transition"
             >
               Coba Lagi
             </button>
@@ -3385,46 +3299,48 @@
       state.cameraMode = mode;
       const modal = document.getElementById('modal-camera-absensi');
       const titleEl = document.getElementById('camera-modal-title');
-      const typeSelector = document.getElementById('camera-att-type-selector');
 
-      if (mode === 'enroll') {
-        if (titleEl) titleEl.textContent = 'Pendaftaran Wajah Pegawai';
-        if (typeSelector) typeSelector.classList.add('hidden');
-      } else {
-        if (titleEl) titleEl.textContent = 'Presensi Biometrik Wajah';
-        if (typeSelector) {
-          typeSelector.classList.remove('hidden');
+      if (titleEl) {
+        titleEl.textContent = (mode === 'enroll') ? 'Daftar Wajah' : 'Absensi';
+      }
 
-          // Cek data presensi hari ini untuk menentukan status Masuk & Pulang
-          const user = state.currentUser;
-          const todayISO = getTodayISO();
-          const existing = state.attendances.find(
-            a => (a.teacher_id === user?.id || a.teacher_id === user?.nip) && a.attendance_date === todayISO
-          );
+      // Cek data presensi hari ini untuk menentukan status Masuk & Pulang otomatis
+      if (mode === 'attendance') {
+        const user = state.currentUser;
+        const todayISO = getTodayISO();
+        const existing = state.attendances.find(
+          a => (a.teacher_id === user?.id || a.teacher_id === user?.nip) && a.attendance_date === todayISO
+        );
 
-          const lblMasuk = document.getElementById('label-last-masuk');
-          const lblPulang = document.getElementById('label-last-pulang');
-
-          if (existing && existing.check_in_time) {
-            if (lblMasuk) lblMasuk.textContent = `(Tercatat: ${existing.check_in_time})`;
-          } else {
-            if (lblMasuk) lblMasuk.textContent = `(Belum Ada)`;
-          }
-
-          if (existing && existing.check_out_time) {
-            if (lblPulang) lblPulang.textContent = `(Tercatat: ${existing.check_out_time})`;
-          } else {
-            if (lblPulang) lblPulang.textContent = `(Belum Ada)`;
-          }
-
-          // Otomatis arahkan ke Masuk jika belum masuk, atau Pulang jika sudah masuk
-          if (!existing || !existing.check_in_time) {
-            setAttendanceTargetType('masuk');
-          } else {
-            setAttendanceTargetType('pulang');
-          }
+        // Otomatis tentukan Masuk jika belum ada jam masuk hari ini, atau Pulang jika sudah absen masuk
+        if (!existing || !existing.check_in_time) {
+          state.attendanceTargetType = 'masuk';
+        } else {
+          state.attendanceTargetType = 'pulang';
         }
       }
+
+      // Set awal status validasi lokasi & tombol persis Gambar 1
+      state.gpsValidation.checking = true;
+      state.gpsValidation.valid = (mode === 'enroll');
+
+      const statusRow = document.getElementById('camera-gps-status-row');
+      if (statusRow) {
+        statusRow.innerHTML = `
+          <div class="w-3.5 h-3.5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+          <span>Memvalidasi lokasi...</span>
+        `;
+      }
+
+      const btnCapture = document.getElementById('btn-capture-biometric');
+      const spinner = document.getElementById('capture-btn-spinner');
+      const label = document.getElementById('capture-btn-label');
+      if (btnCapture) {
+        btnCapture.disabled = true;
+        btnCapture.className = 'w-full py-3.5 px-5 rounded-xl bg-neutral-700 text-white font-bold text-sm transition flex items-center justify-center gap-2.5 cursor-not-allowed opacity-90';
+      }
+      if (spinner) spinner.classList.remove('hidden');
+      if (label) label.textContent = 'Tunggu Validasi Lokasi';
 
       if (modal) modal.classList.remove('hidden');
       await startCameraStream();
@@ -3436,10 +3352,8 @@
       stopCameraStream();
       const modal = document.getElementById('modal-camera-absensi');
       const invModal = document.getElementById('modal-invalid-location');
-      const permPrompt = document.getElementById('camera-permission-prompt');
       if (modal) modal.classList.add('hidden');
       if (invModal) invModal.classList.add('hidden');
-      if (permPrompt) permPrompt.classList.add('hidden');
     }
 
     // Helper Khusus Pembukaan Kamera Depan & Belakang Kompatibel Penuh Format APK & Android WebView
@@ -3454,12 +3368,11 @@
         throw new Error('navigator.mediaDevices.getUserMedia tidak didukung di perangkat ini');
       }
 
-      // TAHAP 1: Langsung panggil getUserMedia tanpa jeda enumerateDevices
-      // Ini krusial di Android WebView agar sistem Android OS langsung memunculkan
-      // dialog notifikasi izin: "Izinkan SiHADIR mengambil gambar dan merekam video?"
+      // TAHAP 1: Constraints yang paling stabil dan memicu prompt izin OS di Android APK WebView
       const directConstraints = [
-        { video: { facingMode: { ideal: facingMode } }, audio: false },
+        { video: { facingMode: { exact: facingMode } }, audio: false },
         { video: { facingMode: facingMode }, audio: false },
+        { video: { facingMode: { ideal: facingMode } }, audio: false },
         { video: true, audio: false }
       ];
 
@@ -3472,8 +3385,7 @@
         }
       }
 
-      // TAHAP 2: Jika izin kamera sudah disetujui pengguna,
-      // kita dapat memilih kamera fisik depan/belakang secara spesifik melalui deviceId
+      // TAHAP 2: Jika izin kamera sudah disetujui, pilih target deviceId kamera depan/belakang
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoInputs = devices.filter(d => d.kind === 'videoinput');
@@ -3505,8 +3417,7 @@
     async function startCameraStream() {
       const videoEl = document.getElementById('camera-video-el');
       const canvasEl = document.getElementById('camera-fallback-canvas');
-      const permPrompt = document.getElementById('camera-permission-prompt');
-      if (!videoEl || !canvasEl) return;
+      if (!videoEl || !canvasEl) return false;
 
       stopCameraStream();
 
@@ -3528,8 +3439,6 @@
       videoEl.setAttribute('muted', 'true');
       videoEl.setAttribute('autoplay', 'true');
 
-      if (permPrompt) permPrompt.classList.add('hidden');
-
       try {
         const stream = await requestCameraMedia(state.cameraFacingMode);
         if (stream) {
@@ -3542,8 +3451,6 @@
             cancelAnimationFrame(state.fallbackAnimId);
             state.fallbackAnimId = null;
           }
-
-          if (permPrompt) permPrompt.classList.add('hidden');
 
           const safePlay = async () => {
             try {
@@ -3559,7 +3466,7 @@
 
           const readyText = document.getElementById('camera-ready-text');
           if (readyText) {
-            readyText.textContent = state.cameraFacingMode === 'user' ? 'Kamera Depan Aktif' : 'Kamera Belakang Aktif';
+            readyText.textContent = 'Siap mengambil foto';
           }
           lucide.createIcons();
           return true;
@@ -3568,15 +3475,10 @@
         console.warn('Kamera otomatis belum terbuka di APK/WebView:', err);
       }
 
-      // Jika stream belum dapat terbuka (misal di APK perlu izin user gesture atau dialog izin Android OS sedang aktif):
-      if (permPrompt) {
-        permPrompt.classList.remove('hidden');
-        lucide.createIcons();
-      } else {
-        videoEl.classList.add('hidden');
-        canvasEl.classList.remove('hidden');
-        startFallbackCameraCanvas(canvasEl);
-      }
+      // Fallback animasi canvas tanpa dialog blocking
+      videoEl.classList.add('hidden');
+      canvasEl.classList.remove('hidden');
+      startFallbackCameraCanvas(canvasEl);
       return false;
     }
 
@@ -3680,8 +3582,17 @@
 
     function stopCameraStream() {
       if (state.mediaStream) {
-        state.mediaStream.getTracks().forEach(t => t.stop());
+        state.mediaStream.getTracks().forEach(t => {
+          try { t.stop(); } catch (e) {}
+        });
         state.mediaStream = null;
+      }
+      const videoEl = document.getElementById('camera-video-el');
+      if (videoEl) {
+        try {
+          videoEl.pause();
+          videoEl.srcObject = null;
+        } catch (e) {}
       }
       if (state.fallbackAnimId) {
         cancelAnimationFrame(state.fallbackAnimId);
@@ -3699,14 +3610,15 @@
       state.gpsValidation.checking = true;
       if (statusRow) {
         statusRow.innerHTML = `
-          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span>Memvalidasi posisi lokasi...</span>
+          <div class="w-3.5 h-3.5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+          <span>Memvalidasi lokasi...</span>
         `;
       }
       if (spinner) spinner.classList.remove('hidden');
-      if (label) label.textContent = 'Memeriksa Posisi Radius...';
+      if (label) label.textContent = 'Tunggu Validasi Lokasi';
       if (btnCapture) {
-        btnCapture.className = 'w-full py-3.5 px-5 rounded-2xl bg-zinc-600 text-white font-bold text-sm transition flex items-center justify-center gap-2.5';
+        btnCapture.disabled = true;
+        btnCapture.className = 'w-full py-3.5 px-5 rounded-xl bg-neutral-700 text-white font-bold text-sm transition flex items-center justify-center gap-2.5 cursor-not-allowed opacity-90';
       }
 
       if (!navigator.geolocation) {
@@ -3755,25 +3667,27 @@
         if (statusRow) {
           statusRow.innerHTML = `
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="text-emerald-300 font-semibold">${state.cameraMode === 'enroll' ? 'Pendaftaran Wajah Siap (' + distMeters + 'm)' : 'Radius Sesuai (' + distMeters + 'm dari SMPN 71 Bandung)'}</span>
+            <span class="text-emerald-300 font-semibold">${state.cameraMode === 'enroll' ? 'Pendaftaran Wajah Siap' : 'Radius Sesuai (' + distMeters + 'm dari kantor)'}</span>
           `;
         }
         if (btnCapture) {
-          btnCapture.className = 'w-full py-3.5 px-5 rounded-2xl bg-brandteal-700 hover:bg-brandteal-600 text-white font-bold text-sm shadow-xl transition flex items-center justify-center gap-2.5 cursor-pointer';
+          btnCapture.disabled = false;
+          btnCapture.className = 'w-full py-3.5 px-5 rounded-xl bg-brandteal-700 hover:bg-brandteal-600 active:scale-95 text-white font-bold text-sm shadow-xl transition flex items-center justify-center gap-2.5 cursor-pointer';
         }
         if (label) {
-          label.textContent = state.cameraMode === 'enroll' ? 'Rekam & Daftarkan Wajah' : 'Ambil Foto & Presensi Sekarang';
+          label.textContent = state.cameraMode === 'enroll' ? 'Ambil Foto Wajah' : (state.attendanceTargetType === 'pulang' ? 'Ambil Foto Presensi Pulang' : 'Ambil Foto Presensi Masuk');
         }
       } else {
         const kmStr = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)} km` : `${distMeters} meter`;
         if (statusRow) {
           statusRow.innerHTML = `
             <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-            <span class="text-rose-300 font-semibold">Di luar radius sekolah (${kmStr})</span>
+            <span class="text-rose-300 font-semibold">Di luar radius kantor (${kmStr})</span>
           `;
         }
         if (btnCapture) {
-          btnCapture.className = 'w-full py-3.5 px-5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition flex items-center justify-center gap-2.5 cursor-pointer';
+          btnCapture.disabled = false;
+          btnCapture.className = 'w-full py-3.5 px-5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition flex items-center justify-center gap-2.5 cursor-pointer';
         }
         if (label) {
           label.textContent = 'Cek Detail Lokasi';
@@ -3785,14 +3699,14 @@
     }
 
     function openInvalidLocationModal(distMeters, maxRadius) {
-      const officeName = state.systemSettings.office_name || 'SMP Negeri 71 Bandung';
+      const officeName = state.systemSettings.office_name || 'Kantor Dinas Pendidikan';
       const distFormatted = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)} km` : `${distMeters} meter`;
 
       document.getElementById('invalid-loc-desc').textContent =
-        `Anda berada di luar radius presensi. Jarak ke ${officeName}: ${distFormatted} (maksimal ${maxRadius} meter)`;
-      document.getElementById('invalid-loc-office').textContent = `Lokasi: ${officeName}`;
-      document.getElementById('invalid-loc-distance').textContent = `Jarak Anda: ${distFormatted}`;
-      document.getElementById('invalid-loc-radius').textContent = `Radius Maksimal: ${maxRadius} meter`;
+        `Anda berada di luar radius kantor. Jarak ke ${officeName}: ${distFormatted} (maksimal ${maxRadius} meter)`;
+      document.getElementById('invalid-loc-office').textContent = `Kantor terdekat: ${officeName}`;
+      document.getElementById('invalid-loc-distance').textContent = `Jarak: ${distFormatted}`;
+      document.getElementById('invalid-loc-radius').textContent = `Radius maksimal: ${maxRadius} meter`;
 
       document.getElementById('modal-invalid-location').classList.remove('hidden');
       lucide.createIcons();
@@ -3838,6 +3752,21 @@
     // Eksekusi Presensi Biometrik Wajah & Pendaftaran Wajah (1 Guru Hanya 1 Kali Presensi per Tanggal, Bebas Duplikasi)
     async function handleCaptureBiometric() {
       if (state.isCapturingBiometric) return;
+
+      // Jika lokasi belum valid dan di luar radius:
+      if (state.cameraMode !== 'enroll' && !state.gpsValidation.valid) {
+        const maxRadius = Number(state.systemSettings.radius_meters) || 40;
+        openInvalidLocationModal(state.gpsValidation.distanceMeters, maxRadius);
+        return;
+      }
+
+      // Jika kamera WebRTC belum siap di APK/WebView, gunakan native camera HP
+      const videoEl = document.getElementById('camera-video-el');
+      if (!state.mediaStream || !videoEl || videoEl.classList.contains('hidden') || videoEl.videoWidth === 0) {
+        openNativeDeviceCamera(state.cameraFacingMode);
+        return;
+      }
+
       const snapshotDataUrl = captureFaceSnapshot();
       await executeBiometricSnapshot(snapshotDataUrl);
     }
@@ -4553,12 +4482,20 @@
     // ====================================================
     function toggleAdminMobileMenu(force) {
       const drawer = document.getElementById('admin-mobile-drawer');
+      const bnavMenuBtn = document.getElementById('bnav-admin-menu');
       if (!drawer) return;
       if (typeof force === 'boolean') {
         if (force) drawer.classList.remove('hidden');
         else drawer.classList.add('hidden');
       } else {
         drawer.classList.toggle('hidden');
+      }
+      if (bnavMenuBtn) {
+        if (!drawer.classList.contains('hidden')) {
+          bnavMenuBtn.className = 'shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-blue-600 bg-blue-50 font-bold text-[10px] transition';
+        } else {
+          bnavMenuBtn.className = 'shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
+        }
       }
       lucide.createIcons();
     }
@@ -4582,34 +4519,29 @@
       tabs.forEach(t => {
         const sec = document.getElementById(`admin-tab-${t}`);
         const sideBtn = document.getElementById(`side-admin-${t}`);
-        const mobBtn = document.getElementById(`mob-admin-${t}`);
         const bnavBtn = document.getElementById(`bnav-admin-${t}`);
 
         if (sec) {
           if (t === tabName) {
             sec.classList.remove('hidden');
             if (sideBtn) sideBtn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 transition';
-            if (mobBtn) {
-              mobBtn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-600 shrink-0 flex items-center gap-1.5 transition';
-              mobBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            if (bnavBtn) {
+              bnavBtn.className = 'shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-blue-600 bg-blue-50 font-bold text-[10px] transition';
+              bnavBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
-            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 font-bold text-[10px] transition';
           } else {
             sec.classList.add('hidden');
             if (sideBtn) sideBtn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition';
-            if (mobBtn) mobBtn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1.5 transition hover:text-slate-900';
-            if (bnavBtn) bnavBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
+            if (bnavBtn) {
+              bnavBtn.className = 'shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
+            }
           }
         }
       });
 
       const bnavMenuBtn = document.getElementById('bnav-admin-menu');
       if (bnavMenuBtn) {
-        if (['konfigurasi', 'pengumuman', 'laporan'].includes(tabName)) {
-          bnavMenuBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 font-bold text-[10px] transition';
-        } else {
-          bnavMenuBtn.className = 'flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
-        }
+        bnavMenuBtn.className = 'shrink-0 flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 font-medium text-[10px] transition hover:text-slate-800';
       }
 
       if (tabName === 'dashboard') {
