@@ -304,8 +304,8 @@
           </button>
         </div>
 
-        <!-- Form Login -->
-        <form id="form-login" onsubmit="window.app.handleLogin(event)" class="w-full space-y-3.5">
+        <!-- Form Login (Kosong Tanpa Nilai Default & Anti-Autofill) -->
+        <form id="form-login" onsubmit="window.app.handleLogin(event)" autocomplete="off" class="w-full space-y-3.5">
           <!-- Input NIP / Email -->
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
@@ -314,6 +314,11 @@
             <input
               type="text"
               id="login-identifier"
+              name="sihadir_login_id"
+              value=""
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
               required
               placeholder="NIP / Email"
               class="w-full h-14 pl-12 pr-4 bg-white border border-slate-200/90 rounded-2xl text-[15px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-900/20 focus:border-navy-900 transition"
@@ -328,6 +333,9 @@
             <input
               type="password"
               id="login-password"
+              name="sihadir_login_pwd"
+              value=""
+              autocomplete="new-password"
               required
               placeholder="Password"
               class="w-full h-14 pl-12 pr-12 bg-white border border-slate-200/90 rounded-2xl text-[15px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-navy-900/20 focus:border-navy-900 transition"
@@ -821,152 +829,165 @@
         <main class="p-3.5 sm:p-6 max-w-[1400px] w-full mx-auto space-y-5 sm:space-y-6">
 
           <!-- ================================================== -->
-          <!-- SUB-VIEW ADMIN 0: DASHBOARD & GRAFIK KEHADIRAN     -->
+          <!-- SUB-VIEW ADMIN 0: DASHBOARD & ANALITIK KEHADIRAN   -->
           <!-- ================================================== -->
           <section id="admin-tab-dashboard" class="hidden space-y-5">
+            <!-- Header Dashboard & Analitik -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                  <i data-lucide="bar-chart-3" class="w-5 h-5 text-blue-600"></i>
-                  <span>Dashboard &amp; Grafik Kehadiran</span>
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2.5">
+                  <i data-lucide="layout-grid" class="w-5 h-5 text-blue-600"></i>
+                  <span>Dashboard &amp; Analitik Kehadiran Real-Time</span>
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">
-                  Ringkasan eksekutif statistik pegawai, distribusi kehadiran, dan status biometrik wajah.
+                  Visualisasi performa kehadiran harian, tren mingguan, dan rekapitulasi status pegawai SMPN 71 Bandung.
                 </p>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <button onclick="window.app.refreshAllData()" class="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-sm transition">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onclick="window.app.openManualAttendanceModal()"
+                  class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                >
+                  <i data-lucide="user-plus" class="w-4 h-4"></i>
+                  <span>+ Presensi Manual</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="window.app.refreshAllData()"
+                  class="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm transition"
+                >
                   <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                  <span>Sinkronkan</span>
-                </button>
-                <button onclick="window.app.switchAdminTab('laporan')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
-                  <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
-                  <span>Buka Rekap Laporan</span>
+                  <span>Sinkronkan Data</span>
                 </button>
               </div>
             </div>
 
-            <!-- 4 Kartu KPI Utama (Simetris di Smartphone 2x2 & Desktop 4 Kolom) -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-slate-500">Total Pegawai</span>
-                  <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                    <i data-lucide="users" class="w-4 h-4"></i>
-                  </span>
-                </div>
-                <p id="dash-stat-total-guru" class="text-2xl font-extrabold text-slate-900 mt-2">0</p>
-                <p id="dash-stat-face-ready" class="text-[11px] text-slate-500 font-medium mt-1">0 Wajah Terdaftar</p>
+            <!-- 4 Kartu Statistik Berwarna dengan Ikon Watermark -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- 1. HADIR TEPAT WAKTU -->
+              <div class="bg-gradient-to-br from-[#0EA57A] to-[#0B7A66] text-white rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <p class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-50/95">HADIR TEPAT WAKTU</p>
+                <p id="dash-card-ontime" class="text-3xl font-extrabold mt-2 leading-none">0</p>
+                <p class="text-[11px] text-emerald-50/90 font-medium mt-2">Masuk sesuai jadwal</p>
+                <i data-lucide="check-circle-2" class="w-24 h-24 absolute -right-3 -bottom-3 text-white/15 stroke-[1.75] pointer-events-none"></i>
               </div>
 
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-emerald-600">Total Kehadiran</span>
-                  <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <i data-lucide="user-check" class="w-4 h-4"></i>
-                  </span>
-                </div>
-                <p id="dash-stat-total-hadir" class="text-2xl font-extrabold text-emerald-700 mt-2">0</p>
-                <p class="text-[11px] text-emerald-600 font-medium mt-1">Tercatat Presensi GPS</p>
+              <!-- 2. TERLAMBAT MASUK -->
+              <div class="bg-gradient-to-br from-[#F5820B] to-[#D96B06] text-white rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <p class="text-[11px] font-extrabold uppercase tracking-wider text-amber-50/95">TERLAMBAT MASUK</p>
+                <p id="dash-card-late" class="text-3xl font-extrabold mt-2 leading-none">0</p>
+                <p class="text-[11px] text-amber-50/90 font-medium mt-2">Lewat batas jam masuk</p>
+                <i data-lucide="clock" class="w-24 h-24 absolute -right-3 -bottom-3 text-white/15 stroke-[1.75] pointer-events-none"></i>
               </div>
 
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-blue-600">Dinas Luar &amp; WFA</span>
-                  <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                  </span>
-                </div>
-                <p id="dash-stat-total-dinas" class="text-2xl font-extrabold text-blue-700 mt-2">0</p>
-                <p class="text-[11px] text-blue-600 font-medium mt-1">Disetujui Admin</p>
+              <!-- 3. DINAS LUAR -->
+              <div class="bg-gradient-to-br from-[#2B59DF] to-[#2343B5] text-white rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <p class="text-[11px] font-extrabold uppercase tracking-wider text-blue-50/95">DINAS LUAR</p>
+                <p id="dash-card-dinas" class="text-3xl font-extrabold mt-2 leading-none">0</p>
+                <p class="text-[11px] text-blue-50/90 font-medium mt-2">Tugas dinas luar resmi</p>
+                <i data-lucide="briefcase" class="w-24 h-24 absolute -right-3 -bottom-3 text-white/15 stroke-[1.75] pointer-events-none"></i>
               </div>
 
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-amber-600">Menunggu Verifikasi</span>
-                  <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <i data-lucide="clock" class="w-4 h-4"></i>
-                  </span>
-                </div>
-                <p id="dash-stat-total-pending" class="text-2xl font-extrabold text-amber-700 mt-2">0</p>
-                <p class="text-[11px] text-amber-600 font-medium mt-1">Permohonan Baru</p>
+              <!-- 4. WFA/H & IZIN/SAKIT -->
+              <div class="bg-gradient-to-br from-[#E12D53] to-[#BE184A] text-white rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                <p class="text-[11px] font-extrabold uppercase tracking-wider text-rose-50/95">WFA/H &amp; IZIN/SAKIT</p>
+                <p id="dash-card-wfah" class="text-3xl font-extrabold mt-2 leading-none">0</p>
+                <p class="text-[11px] text-rose-50/90 font-medium mt-2">Kerja fleksibel / izin</p>
+                <i data-lucide="heart-pulse" class="w-24 h-24 absolute -right-3 -bottom-3 text-white/15 stroke-[1.75] pointer-events-none"></i>
               </div>
             </div>
 
-            <!-- Grafik Visual Distribusi & Pintasan Cepat -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              <!-- Grafik Distribusi Presensi & Biometrik -->
-              <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
-                    <span>Grafik Distribusi Kehadiran &amp; Biometrik</span>
-                  </h3>
-                  <span class="text-[10px] font-bold text-slate-400 uppercase">Real-Time Database</span>
+            <!-- 2 Panel Grafik Analitik Real-Time (Grid 2 Kolom Asimetris ~65% : ~35%) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+              <!-- Panel Kiri: Tren Kehadiran 7 Hari Terakhir -->
+              <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div class="flex items-start justify-between gap-2 mb-4">
+                  <div>
+                    <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
+                      <span>Tren Kehadiran 7 Hari Terakhir</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-400 font-medium mt-0.5">
+                      Jumlah hadir tepat waktu, terlambat, dan izin dinas
+                    </p>
+                  </div>
+                  <span class="px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-[11px] font-bold shrink-0">
+                    Real-Time
+                  </span>
                 </div>
-                <div id="admin-dashboard-chart-bars" class="space-y-3.5 pt-1">
+
+                <!-- Area Grafik SVG 7 Hari Terakhir -->
+                <div id="dash-trend-7days-svg-box" class="w-full overflow-x-auto py-1">
                   <!-- Di-render secara dinamis oleh JS -->
                 </div>
+
+                <!-- Legenda Warna Tren 7 Hari -->
+                <div class="flex flex-wrap items-center justify-center gap-4 pt-3 text-[11px] font-semibold text-slate-600">
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-[#10B981] inline-block"></span>
+                    <span>Hadir Tepat Waktu</span>
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-[#F59E0B] inline-block"></span>
+                    <span>Terlambat</span>
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-[#3B82F6] inline-block"></span>
+                    <span>Dinas Luar</span>
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-[#8B5CF6] inline-block"></span>
+                    <span>WFA/H &amp; Izin</span>
+                  </span>
+                </div>
               </div>
 
-              <!-- Pintasan Cepat Manajemen Admin -->
-              <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3.5">
-                <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
-                  <span>Akses Cepat Modul Manajemen</span>
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
-                  <button onclick="window.app.switchAdminTab('monitoring')" class="p-3 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between transition group">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                      </div>
-                      <div>
-                        <p class="text-xs font-extrabold text-slate-800 group-hover:text-blue-600">Monitoring Presensi</p>
-                        <p class="text-[10px] text-slate-500">Pantau jam masuk, pulang &amp; radius GPS</p>
-                      </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-                  </button>
+              <!-- Panel Kanan: Komposisi Status Hari Ini (Donut Chart) -->
+              <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i>
+                    <span>Komposisi Status Hari Ini</span>
+                  </h3>
+                  <p class="text-[11px] text-slate-400 font-medium mt-0.5">
+                    Persentase distribusi kehadiran
+                  </p>
+                </div>
 
-                  <button onclick="window.app.switchAdminTab('guru')" class="p-3 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between transition group">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                      </div>
-                      <div>
-                        <p class="text-xs font-extrabold text-slate-800 group-hover:text-blue-600">Data Guru &amp; Import Excel</p>
-                        <p class="text-[10px] text-slate-500">Kelola akun NIP, password &amp; reset wajah</p>
-                      </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-                  </button>
+                <!-- Donut Chart SVG -->
+                <div id="dash-donut-svg-box" class="my-5 flex items-center justify-center">
+                  <!-- Di-render secara dinamis oleh JS -->
+                </div>
 
-                  <button onclick="window.app.switchAdminTab('verifikasi')" class="p-3 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between transition group">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <i data-lucide="check-square" class="w-4 h-4"></i>
-                      </div>
-                      <div>
-                        <p class="text-xs font-extrabold text-slate-800 group-hover:text-blue-600">Verifikasi Dinas Luar &amp; Izin</p>
-                        <p class="text-[10px] text-slate-500">Setujui pengajuan &amp; cetak PDF ber-Kop</p>
-                      </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-                  </button>
+                <!-- Legenda Donut & Total Guru Terdaftar -->
+                <div class="space-y-3">
+                  <div class="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5 text-[11px] font-semibold text-slate-600">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-[#10B981] inline-block"></span>
+                      <span>Hadir</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-[#F59E0B] inline-block"></span>
+                      <span>Terlambat</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-[#3B82F6] inline-block"></span>
+                      <span>Dinas Luar</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-[#8B5CF6] inline-block"></span>
+                      <span>WFA/H &amp; Izin</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-sm bg-[#E2E8F0] inline-block"></span>
+                      <span>Belum Hadir</span>
+                    </span>
+                  </div>
 
-                  <button onclick="window.app.switchAdminTab('konfigurasi')" class="p-3 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between transition group">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                        <i data-lucide="settings" class="w-4 h-4"></i>
-                      </div>
-                      <div>
-                        <p class="text-xs font-extrabold text-slate-800 group-hover:text-blue-600">Konfigurasi &amp; Geofencing</p>
-                        <p class="text-[10px] text-slate-500">Titik GPS, Kop Surat, Backup &amp; Maintenance</p>
-                      </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-                  </button>
+                  <div class="pt-3 border-t border-slate-100 text-center text-xs text-slate-500 font-medium">
+                    Total Guru Terdaftar: <strong id="dash-donut-total-guru" class="text-slate-800 font-extrabold">0 Pegawai</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1303,9 +1324,24 @@
                 <h2 class="text-xl font-extrabold text-slate-900">Monitoring Presensi Real-Time</h2>
                 <p class="text-xs text-slate-500">Pantau kehadiran guru, validasi radius GPS, dan skor kemiripan wajah hari ini.</p>
               </div>
-              <button onclick="window.app.refreshAllData()" class="self-start px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Muat Ulang Data
-              </button>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onclick="window.app.openManualAttendanceModal()"
+                  class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                >
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                  <span>+ Presensi Absen Manual</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="window.app.refreshAllData()"
+                  class="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm transition"
+                >
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                  <span>Muat Ulang Data</span>
+                </button>
+              </div>
             </div>
 
             <!-- Kartu Statistik Ringkas -->
@@ -1319,7 +1355,7 @@
                 <p id="stat-total-hadir" class="text-2xl font-extrabold text-emerald-700 mt-1">0</p>
               </div>
               <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-                <p class="text-xs font-semibold text-blue-600">Dinas Luar & WFA/H</p>
+                <p class="text-xs font-semibold text-blue-600">Dinas Luar &amp; WFA/H</p>
                 <p id="stat-total-dinas" class="text-2xl font-extrabold text-blue-700 mt-1">0</p>
               </div>
               <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
@@ -1335,12 +1371,12 @@
                 <table class="w-full text-left border-collapse min-w-[680px]">
                   <thead>
                     <tr class="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase">
-                      <th class="py-3 px-3">Tanggal</th>
-                      <th class="py-3 px-3">Nama Guru & NIP</th>
-                      <th class="py-3 px-3">Jam Masuk</th>
-                      <th class="py-3 px-3">Jam Pulang</th>
-                      <th class="py-3 px-3">Durasi & Jarak GPS</th>
-                      <th class="py-3 px-3">Status</th>
+                      <th class="py-3 px-3">TANGGAL</th>
+                      <th class="py-3 px-3">NAMA GURU &amp; NIP/NUPTK</th>
+                      <th class="py-3 px-3">JAM MASUK</th>
+                      <th class="py-3 px-3">JAM PULANG</th>
+                      <th class="py-3 px-3">DURASI &amp; JARAK GPS</th>
+                      <th class="py-3 px-3">STATUS</th>
                     </tr>
                   </thead>
                   <tbody id="admin-monitoring-tbody" class="divide-y divide-slate-100 text-xs"></tbody>
@@ -1356,7 +1392,7 @@
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div>
                 <h2 class="text-xl font-extrabold text-slate-900">Manajemen Guru &amp; Biometrik Wajah</h2>
-                <p class="text-xs text-slate-500">Kelola kredensial login tabel Guru (NIP/Email &amp; Password), import massal Excel (.xlsx), serta status perekaman wajah.</p>
+                <p class="text-xs text-slate-500">Kelola kredensial login tabel Guru (NIP/NUPTK / Email &amp; Password) serta status perekaman wajah.</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <input
@@ -1394,14 +1430,14 @@
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-x-auto">
-              <table class="w-full text-left border-collapse min-w-[720px]">
+              <table class="w-full text-left border-collapse min-w-[740px]">
                 <thead>
                   <tr class="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase">
-                    <th class="py-3 px-3">Nama Pegawai</th>
-                    <th class="py-3 px-3">NIP &amp; Email</th>
-                    <th class="py-3 px-3">Jabatan</th>
-                    <th class="py-3 px-3">Status Biometrik Wajah</th>
-                    <th class="py-3 px-3 text-right">Aksi Manajemen</th>
+                    <th class="py-3 px-3">NAMA PEGAWAI</th>
+                    <th class="py-3 px-3">NIP/NUPTK &amp; EMAIL</th>
+                    <th class="py-3 px-3">JABATAN</th>
+                    <th class="py-3 px-3">STATUS BIOMETRIK WAJAH</th>
+                    <th class="py-3 px-3 text-right">AKSI MANAJEMEN</th>
                   </tr>
                 </thead>
                 <tbody id="admin-teachers-tbody" class="divide-y divide-slate-100 text-xs"></tbody>
@@ -1451,45 +1487,56 @@
           <section id="admin-tab-pengumuman" class="hidden space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2.5">
                   <i data-lucide="megaphone" class="w-5 h-5 text-blue-600"></i>
-                  <span>Pengumuman &amp; Pesan Kepegawaian</span>
+                  <span>Kirim Pengumuman &amp; Informasi Sekolah</span>
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">
-                  Kirim pengumuman atau instruksi resmi yang langsung muncul pada lonceng notifikasi aplikasi Guru secara real-time.
+                  Kirim pesan langsung ke semua pegawai. Pengumuman otomatis muncul secara real-time di notifikasi ikon lonceng guru.
                 </p>
               </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              <!-- Form Buat Pengumuman Baru -->
-              <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-                <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-2 pb-2 border-b border-slate-100">
+              <!-- Kolom Kiri (45%): BUAT PENGUMUMAN BARU -->
+              <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+                <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-2 pb-2.5 border-b border-slate-100">
                   <i data-lucide="send" class="w-4 h-4 text-blue-600"></i>
-                  <span>Buat Pengumuman / Pesan Baru</span>
+                  <span>BUAT PENGUMUMAN BARU</span>
                 </h3>
 
                 <form onsubmit="window.app.createAnnouncement(event)" class="space-y-3.5">
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Judul Pengumuman</label>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Judul Pengumuman / Informasi</label>
                     <input
                       type="text"
                       id="ann-input-title"
                       required
-                      placeholder="Contoh: Rapat Dinas & Evaluasi Presensi Bulanan"
-                      class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-600"
+                      placeholder="Contoh: Rapat Dewan Guru & Jam Presensi Baru"
+                      class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-600"
                     />
                   </div>
 
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Kategori / Prioritas Pesan</label>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Target Penerima</label>
+                    <select
+                      id="ann-input-target"
+                      class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+                    >
+                      <option value="Semua Guru & Pegawai">Semua Guru &amp; Pegawai SMPN 71</option>
+                      <option value="Seluruh Guru Mata Pelajaran">Seluruh Guru Mata Pelajaran</option>
+                      <option value="Tenaga Administrasi & Kependidikan">Tenaga Administrasi &amp; Kependidikan</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Kategori Pengumuman</label>
                     <select
                       id="ann-input-priority"
-                      class="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600"
+                      class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
                     >
-                      <option value="Info Umum">Info Umum (Biru)</option>
-                      <option value="Penting">Penting (Kuning/Amber)</option>
-                      <option value="Mendesak">Mendesak / Darurat (Merah)</option>
+                      <option value="Informasi">Informasi</option>
+                      <option value="Penting / Mendesak">Penting / Mendesak</option>
                     </select>
                   </div>
 
@@ -1499,29 +1546,29 @@
                       id="ann-input-message"
                       rows="4"
                       required
-                      placeholder="Tuliskan isi pengumuman yang akan dibaca oleh seluruh Guru..."
+                      placeholder="Tuliskan detail pengumuman di sini..."
                       class="w-full p-3.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-600"
                     ></textarea>
                   </div>
 
                   <button
                     type="submit"
-                    class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2"
+                    class="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2"
                   >
-                    <i data-lucide="megaphone" class="w-4 h-4"></i>
-                    <span>Publikasikan ke Seluruh Guru</span>
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Kirim Pengumuman Sekarang</span>
                   </button>
                 </form>
               </div>
 
-              <!-- Daftar Riwayat Pengumuman Aktif -->
-              <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="bell-ring" class="w-4 h-4 text-emerald-600"></i>
-                    <span>Daftar Pengumuman Aktif di Aplikasi Guru</span>
+              <!-- Kolom Kanan (55%): RIWAYAT PENGUMUMAN TERKIRIM -->
+              <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                  <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                    <i data-lucide="history" class="w-4 h-4 text-slate-700"></i>
+                    <span>RIWAYAT PENGUMUMAN TERKIRIM</span>
                   </h3>
-                  <span id="ann-total-count-label" class="text-[11px] font-bold text-slate-500">0 Pengumuman</span>
+                  <span id="ann-total-count-label" class="px-2.5 py-1 rounded-lg bg-slate-100 text-[10px] font-extrabold text-slate-600 uppercase">0 PESAN</span>
                 </div>
 
                 <div id="admin-announcements-list" class="space-y-3">
@@ -1532,45 +1579,89 @@
           </section>
 
           <!-- ================================================== -->
-          <!-- SUB-VIEW ADMIN 6: REKAP & EKSPOR LAPORAN CSV & PDF -->
+          <!-- SUB-VIEW ADMIN 6: REKAP & EKSPOR LAPORAN PRESENSI  -->
           <!-- ================================================== -->
           <section id="admin-tab-laporan" class="hidden space-y-5">
+            <!-- Header & 3 Tombol Ekspor -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 class="text-xl font-extrabold text-slate-900">Rekapitulasi &amp; Ekspor Laporan Presensi</h2>
-                <p class="text-xs text-slate-500">Unduh data kehadiran guru dalam format CSV/Excel atau Cetak PDF ber-Kop Surat resmi untuk pelaporan BKPSDM / Sekolah.</p>
+                <p class="text-xs text-slate-500">Cetak dokumen resmi format A4 bertanda tangan Kepala Sekolah dan unduh data Excel (.xlsx).</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onclick="window.app.exportAttendanceExcel()"
+                  class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                >
+                  <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                  <span>Export Excel (.xlsx)</span>
+                </button>
+                <button
+                  type="button"
                   onclick="window.app.exportAttendancePDF()"
-                  class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                  class="px-4 py-2.5 bg-navy-900 hover:bg-navy-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
                 >
                   <i data-lucide="printer" class="w-4 h-4"></i>
-                  <span>Cetak / Export PDF</span>
+                  <span>Cetak / Unduh PDF (A4)</span>
                 </button>
                 <button
                   type="button"
                   onclick="window.app.exportAttendanceCSV()"
-                  class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+                  class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                 >
                   <i data-lucide="download" class="w-4 h-4"></i>
-                  <span>Unduh Laporan (.CSV)</span>
+                  <span>CSV</span>
                 </button>
               </div>
             </div>
 
+            <!-- Bilah Filter Kartu Putih (Pilih Pegawai & Bulan/Periode) -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 px-5 py-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div class="flex items-center gap-2">
+                  <label for="report-filter-teacher" class="text-xs font-bold text-slate-600 shrink-0">Pilih Pegawai:</label>
+                  <select
+                    id="report-filter-teacher"
+                    onchange="window.app.applyReportFilters()"
+                    class="h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white focus:outline-none focus:border-blue-600 min-w-[220px]"
+                  >
+                    <option value="">Semua Pegawai</option>
+                  </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <label for="report-filter-month" class="text-xs font-bold text-slate-600 shrink-0">Bulan / Periode:</label>
+                  <input
+                    type="month"
+                    id="report-filter-month"
+                    onchange="window.app.applyReportFilters()"
+                    class="h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onclick="window.app.resetReportFilters()"
+                class="self-end sm:self-auto text-xs font-extrabold text-blue-600 hover:text-blue-700 hover:underline transition"
+              >
+                Reset Filter
+              </button>
+            </div>
+
+            <!-- Tabel Hasil Filter Rekapitulasi -->
             <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-x-auto">
               <table class="w-full text-left border-collapse min-w-[680px]">
                 <thead>
                   <tr class="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase">
-                    <th class="py-3 px-3">Tanggal</th>
-                    <th class="py-3 px-3">NIP</th>
-                    <th class="py-3 px-3">Nama Lengkap</th>
-                    <th class="py-3 px-3">Masuk</th>
-                    <th class="py-3 px-3">Pulang</th>
-                    <th class="py-3 px-3">Durasi</th>
-                    <th class="py-3 px-3">Status</th>
+                    <th class="py-3 px-3">TANGGAL</th>
+                    <th class="py-3 px-3">NIP/NUPTK</th>
+                    <th class="py-3 px-3">NAMA LENGKAP</th>
+                    <th class="py-3 px-3">MASUK</th>
+                    <th class="py-3 px-3">PULANG</th>
+                    <th class="py-3 px-3">DURASI</th>
+                    <th class="py-3 px-3">STATUS</th>
                   </tr>
                 </thead>
                 <tbody id="admin-report-tbody" class="divide-y divide-slate-100 text-xs"></tbody>
@@ -1847,6 +1938,71 @@
             </button>
             <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">
               Simpan Data Guru
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- 7B. MODAL INPUT PRESENSI ABSEN MANUAL (ADMIN)              -->
+    <!-- ========================================================== -->
+    <div id="modal-admin-manual-attendance" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <i data-lucide="user-plus" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Input Presensi Manual</h3>
+              <p class="text-[11px] text-slate-500">Catat kehadiran manual pegawai oleh Administrator</p>
+            </div>
+          </div>
+          <button onclick="window.app.closeManualAttendanceModal()" class="p-1 text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form onsubmit="window.app.saveManualAttendanceFromAdmin(event)" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Pilih Guru / Pegawai</label>
+            <select id="manual-att-teacher" required class="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600"></select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tanggal Presensi</label>
+              <input type="date" id="manual-att-date" required class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status Kehadiran</label>
+              <select id="manual-att-status" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600">
+                <option value="Hadir">Hadir (Tepat Waktu)</option>
+                <option value="Terlambat">Terlambat</option>
+                <option value="Lengkap">Lengkap</option>
+                <option value="Sakit">Sakit / Izin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Jam Masuk</label>
+              <input type="time" step="1" id="manual-att-in" value="07:15:00" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Jam Pulang (Opsional)</label>
+              <input type="time" step="1" id="manual-att-out" value="16:00:00" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-600" />
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2">
+            <button type="button" onclick="window.app.closeManualAttendanceModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">
+              Simpan Presensi
             </button>
           </div>
         </form>
@@ -2798,6 +2954,19 @@
       lucide.createIcons();
     }
 
+    function clearLoginInputs() {
+      const idInput = document.getElementById('login-identifier');
+      const pwdInput = document.getElementById('login-password');
+      if (idInput) {
+        idInput.value = '';
+        idInput.setAttribute('value', '');
+      }
+      if (pwdInput) {
+        pwdInput.value = '';
+        pwdInput.setAttribute('value', '');
+      }
+    }
+
     function openAdminDashboard() {
       toggleAdminMobileDrawer(false);
       document.getElementById('maintenance-fullscreen-overlay').classList.add('hidden');
@@ -2811,7 +2980,7 @@
       }
 
       populateAdminSystemConfigForm();
-      switchAdminTab(state.activeAdminTab || 'konfigurasi');
+      switchAdminTab(state.activeAdminTab || 'dashboard');
       setTimeout(() => initOrUpdateLeafletMap(), 150);
       lucide.createIcons();
     }
@@ -2823,11 +2992,13 @@
           await supabase.auth.signOut();
         }
         state.currentUser = null;
+        clearLoginInputs();
         document.getElementById('view-guru').classList.add('hidden');
         document.getElementById('view-admin').classList.add('hidden');
         document.getElementById('view-login').classList.remove('hidden');
         enforceMaintenancePolicy();
       });
+      clearLoginInputs();
       showToast('Anda telah keluar dari sesi aplikasi.', 'info');
     }
 
@@ -4560,15 +4731,141 @@
       openPrintPreviewModal(html);
     }
 
+    function getAttendanceDisplayStatus(a) {
+      if (!a) return 'Hadir';
+      if (a.status === 'Terlambat') return 'Terlambat';
+      if (a.notes === 'Sakit' || a.status === 'Sakit' || a.status === 'Izin') return a.status === 'Izin' ? 'Izin' : 'Sakit';
+      if (a.check_in_time) {
+        // Cek batas jam masuk dari jadwal mingguan (default 08:00:00)
+        const limitHMS = '08:00:00';
+        if (a.check_in_time > limitHMS) return 'Terlambat';
+      }
+      return a.status || 'Hadir';
+    }
+
+    function getFilteredReportAttendances() {
+      const teacherId = document.getElementById('report-filter-teacher')?.value || '';
+      const monthVal = document.getElementById('report-filter-month')?.value || '';
+
+      return state.attendances.filter(a => {
+        if (teacherId && String(a.teacher_id) !== String(teacherId)) return false;
+        if (monthVal && (!a.attendance_date || !a.attendance_date.startsWith(monthVal))) return false;
+        return true;
+      });
+    }
+
+    function populateReportFilterTeacherDropdown() {
+      const sel = document.getElementById('report-filter-teacher');
+      if (!sel) return;
+      const currentVal = sel.value;
+      const optionsHtml = [
+        `<option value="">Semua Pegawai</option>`,
+        ...state.teachers.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.full_name)} (${escapeHtml(t.nip)})</option>`)
+      ].join('');
+      sel.innerHTML = optionsHtml;
+      if (currentVal && state.teachers.some(t => String(t.id) === String(currentVal))) {
+        sel.value = currentVal;
+      }
+    }
+
+    function applyReportFilters() {
+      renderAdminReportTableOnly();
+    }
+
+    function resetReportFilters() {
+      const sel = document.getElementById('report-filter-teacher');
+      const monthInput = document.getElementById('report-filter-month');
+      if (sel) sel.value = '';
+      if (monthInput) monthInput.value = '';
+      renderAdminReportTableOnly();
+      showToast('Filter laporan presensi telah direset.', 'info');
+    }
+
+    function renderAdminReportTableOnly() {
+      const repTbody = document.getElementById('admin-report-tbody');
+      if (!repTbody) return;
+      const filtered = getFilteredReportAttendances();
+
+      if (!filtered.length) {
+        repTbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Tidak ada data presensi yang cocok dengan filter.</td></tr>`;
+        return;
+      }
+
+      repTbody.innerHTML = filtered.map(a => {
+        const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+        const dispStatus = getAttendanceDisplayStatus(a);
+        const statusColor = dispStatus === 'Terlambat'
+          ? 'text-amber-600 font-extrabold'
+          : 'text-emerald-700 font-extrabold';
+        return `
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-3 px-3 font-mono font-semibold text-slate-700">${escapeHtml(a.attendance_date)}</td>
+            <td class="py-3 px-3 font-mono font-bold text-slate-800">${escapeHtml(t.nip)}</td>
+            <td class="py-3 px-3 font-extrabold text-slate-900 uppercase">${escapeHtml(t.full_name)}</td>
+            <td class="py-3 px-3 font-mono font-bold text-emerald-700">${escapeHtml(a.check_in_time || '-')}</td>
+            <td class="py-3 px-3 font-mono font-semibold text-slate-700">${escapeHtml(a.check_out_time || '-')}</td>
+            <td class="py-3 px-3 text-slate-600">${escapeHtml(a.work_duration || a.notes || '-')}</td>
+            <td class="py-3 px-3 ${statusColor}">${escapeHtml(dispStatus)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportAttendanceExcel() {
+      const filtered = getFilteredReportAttendances();
+      if (!filtered.length) {
+        showToast('Tidak ada data presensi untuk diekspor ke Excel.', 'warning');
+        return;
+      }
+      if (typeof XLSX === 'undefined') {
+        showToast('Library SheetJS sedang dimuat, silakan coba lagi.', 'warning');
+        return;
+      }
+
+      const excelRows = filtered.map((a, idx) => {
+        const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+        return {
+          'No': idx + 1,
+          'Tanggal': a.attendance_date,
+          'NIP/NUPTK': t.nip,
+          'Nama Lengkap': t.full_name,
+          'Jam Masuk': a.check_in_time || '-',
+          'Jam Pulang': a.check_out_time || '-',
+          'Durasi Kerja': a.work_duration || a.notes || '-',
+          'Jarak GPS (m)': a.distance_meters || 0,
+          'Status': getAttendanceDisplayStatus(a)
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(excelRows);
+      ws['!cols'] = [
+        { wch: 6 },
+        { wch: 14 },
+        { wch: 22 },
+        { wch: 30 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 16 },
+        { wch: 14 },
+        { wch: 14 }
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rekap_Presensi');
+      XLSX.writeFile(wb, `Rekap_Presensi_${getTodayISO()}.xlsx`);
+      showToast('Laporan Excel (.xlsx) berhasil diunduh.', 'success');
+    }
+
     function exportAttendancePDF() {
-      const headers = ['No', 'Tanggal', 'NIP', 'Nama Lengkap Pegawai', 'Jam Masuk', 'Jam Pulang', 'Durasi', 'Status'];
+      const filtered = getFilteredReportAttendances();
+      const headers = ['No', 'Tanggal', 'NIP/NUPTK', 'Nama Lengkap Pegawai', 'Jam Masuk', 'Jam Pulang', 'Durasi', 'Status'];
       let rowsHtml = '';
 
-      if (!state.attendances.length) {
+      if (!filtered.length) {
         rowsHtml = `<tr><td colspan="8" style="border: 1px solid #CBD5E1; padding: 14px; text-align: center; color: #64748B;">Belum ada data rekaman presensi kehadiran pegawai.</td></tr>`;
       } else {
-        rowsHtml = state.attendances.map((a, idx) => {
+        rowsHtml = filtered.map((a, idx) => {
           const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+          const dispStatus = getAttendanceDisplayStatus(a);
           return `
             <tr>
               <td style="border: 1px solid #CBD5E1; padding: 7px 8px; text-align: center;">${idx + 1}</td>
@@ -4578,7 +4875,7 @@
               <td style="border: 1px solid #CBD5E1; padding: 7px 8px; font-family: monospace;">${escapeHtml(a.check_in_time || '-')}</td>
               <td style="border: 1px solid #CBD5E1; padding: 7px 8px; font-family: monospace;">${escapeHtml(a.check_out_time || '-')}</td>
               <td style="border: 1px solid #CBD5E1; padding: 7px 8px;">${escapeHtml(a.work_duration || a.notes || '-')}</td>
-              <td style="border: 1px solid #CBD5E1; padding: 7px 8px; font-weight: 800;">${escapeHtml(a.status)}</td>
+              <td style="border: 1px solid #CBD5E1; padding: 7px 8px; font-weight: 800;">${escapeHtml(dispStatus)}</td>
             </tr>
           `;
         }).join('');
@@ -4586,7 +4883,7 @@
 
       const html = buildOfficialPrintHTML(
         'LAPORAN REKAPITULASI PRESENSI KEHADIRAN PEGAWAI',
-        `Total Rekaman Presensi: ${state.attendances.length} Data`,
+        `Total Rekaman Presensi: ${filtered.length} Data`,
         headers,
         rowsHtml
       );
@@ -4594,14 +4891,180 @@
     }
 
     // ====================================================
+    // DASHBOARD ANALITIK (4 KARTU + TREN 7 HARI + DONUT)
+    // ====================================================
+    function renderAdminDashboardAnalytics() {
+      const totalGuru = state.teachers.length;
+      const onTimeList = state.attendances.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) !== 'Terlambat');
+      const lateList = state.attendances.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) === 'Terlambat');
+      const dinasApproved = state.leaveRequests.filter(l => l.request_type === 'Dinas Luar' && l.status === 'Diterima');
+      const wfahApproved = state.leaveRequests.filter(l => l.request_type !== 'Dinas Luar' && l.status === 'Diterima');
+      const sakitAttendances = state.attendances.filter(a => !a.check_in_time && (a.notes === 'Sakit' || a.status === 'Sakit' || a.status === 'Izin'));
+
+      const countOnTime = onTimeList.length;
+      const countLate = lateList.length;
+      const countDinas = dinasApproved.length;
+      const countWfah = wfahApproved.length + sakitAttendances.length;
+
+      const elOnTime = document.getElementById('dash-card-ontime');
+      const elLate = document.getElementById('dash-card-late');
+      const elDinas = document.getElementById('dash-card-dinas');
+      const elWfah = document.getElementById('dash-card-wfah');
+      const elDonutTotal = document.getElementById('dash-donut-total-guru');
+
+      if (elOnTime) elOnTime.textContent = countOnTime;
+      if (elLate) elLate.textContent = countLate;
+      if (elDinas) elDinas.textContent = countDinas;
+      if (elWfah) elWfah.textContent = countWfah;
+      if (elDonutTotal) elDonutTotal.textContent = `${totalGuru} Pegawai`;
+
+      // 1. Render Grafik Tren Kehadiran 7 Hari Terakhir (SVG Responsif)
+      const trendBox = document.getElementById('dash-trend-7days-svg-box');
+      if (trendBox) {
+        const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const iso = `${yyyy}-${mm}-${dd}`;
+          const label = `${d.getDate()} ${monthsShort[d.getMonth()]}`;
+
+          const dayAtt = state.attendances.filter(a => a.attendance_date === iso);
+          const dayLv = state.leaveRequests.filter(l => l.request_date === iso && l.status === 'Diterima');
+
+          const cOnTime = dayAtt.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) !== 'Terlambat').length;
+          const cLate = dayAtt.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) === 'Terlambat').length;
+          const cDinas = dayLv.filter(l => l.request_type === 'Dinas Luar').length;
+          const cWfah = dayLv.filter(l => l.request_type !== 'Dinas Luar').length +
+            dayAtt.filter(a => !a.check_in_time && a.notes).length;
+
+          last7Days.push({ iso, label, cOnTime, cLate, cDinas, cWfah });
+        }
+
+        const maxVal = Math.max(
+          1,
+          ...last7Days.map(d => Math.max(d.cOnTime, d.cLate, d.cDinas, d.cWfah))
+        );
+
+        const svgW = 680;
+        const svgH = 220;
+        const padL = 34;
+        const padR = 24;
+        const padT = 16;
+        const padB = 34;
+        const plotW = svgW - padL - padR;
+        const plotH = svgH - padT - padB;
+
+        const getX = (idx) => padL + (idx * (plotW / 6));
+        const getY = (val) => padT + plotH - ((val / maxVal) * plotH);
+
+        const gridLines = last7Days.map((d, idx) => {
+          const x = getX(idx);
+          return `
+            <line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#F1F5F9" stroke-width="1" />
+            <text x="${x}" y="${svgH - 10}" text-anchor="middle" fill="#64748B" font-size="11" font-weight="600">${d.label}</text>
+          `;
+        }).join('');
+
+        const buildPathAndDots = (key, color) => {
+          const pts = last7Days.map((d, idx) => `${getX(idx)},${getY(d[key])}`).join(' ');
+          const dots = last7Days.map((d, idx) => {
+            if (d[key] === 0) return '';
+            return `<circle cx="${getX(idx)}" cy="${getY(d[key])}" r="3.5" fill="${color}" stroke="#FFFFFF" stroke-width="1.5" />`;
+          }).join('');
+          const hasNonZero = last7Days.some(d => d[key] > 0);
+          return hasNonZero
+            ? `<polyline fill="none" stroke="${color}" stroke-width="2.2" points="${pts}" />${dots}`
+            : '';
+        };
+
+        trendBox.innerHTML = `
+          <svg viewBox="0 0 ${svgW} ${svgH}" class="w-full h-52 select-none">
+            <!-- Garis Horizontal Atas & Bawah -->
+            <line x1="${padL}" y1="${padT}" x2="${padL + plotW}" y2="${padT}" stroke="#F1F5F9" stroke-width="1" />
+            <line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#E2E8F0" stroke-width="1" />
+            <!-- Label Sumbu Y -->
+            <text x="${padL - 10}" y="${padT + 4}" text-anchor="end" fill="#64748B" font-size="11" font-weight="600">${maxVal}</text>
+            <text x="${padL - 10}" y="${padT + plotH + 4}" text-anchor="end" fill="#64748B" font-size="11" font-weight="600">0</text>
+            <!-- Grid Vertikal 7 Hari -->
+            ${gridLines}
+            <!-- Plot Garis Tren -->
+            ${buildPathAndDots('cOnTime', '#10B981')}
+            ${buildPathAndDots('cLate', '#F59E0B')}
+            ${buildPathAndDots('cDinas', '#3B82F6')}
+            ${buildPathAndDots('cWfah', '#8B5CF6')}
+          </svg>
+        `;
+      }
+
+      // 2. Render Donut Chart Komposisi Status Hari Ini
+      const donutBox = document.getElementById('dash-donut-svg-box');
+      if (donutBox) {
+        const todayISO = getTodayISO();
+        const todayAtt = state.attendances.filter(a => a.attendance_date === todayISO);
+        const todayLv = state.leaveRequests.filter(l => l.request_date === todayISO && l.status === 'Diterima');
+
+        const tOnTime = todayAtt.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) !== 'Terlambat').length;
+        const tLate = todayAtt.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) === 'Terlambat').length;
+        const tDinas = todayLv.filter(l => l.request_type === 'Dinas Luar').length;
+        const tWfah = todayLv.filter(l => l.request_type !== 'Dinas Luar').length;
+        const activeTodaySum = tOnTime + tLate + tDinas + tWfah;
+        const tAbsent = Math.max(0, totalGuru - activeTodaySum);
+
+        // Jika hari ini belum ada aktivitas, gunakan proporsi total atau lingkaran Belum Hadir (#E2E8F0) seperti gambar referensi
+        const totalForDonut = Math.max(1, tOnTime + tLate + tDinas + tWfah + (tAbsent || 1));
+        const segments = [
+          { val: tOnTime, color: '#10B981' },
+          { val: tLate, color: '#F59E0B' },
+          { val: tDinas, color: '#3B82F6' },
+          { val: tWfah, color: '#8B5CF6' },
+          { val: (tOnTime + tLate + tDinas + tWfah === 0) ? totalForDonut : tAbsent, color: '#E2E8F0' }
+        ];
+
+        const radius = 64;
+        const circum = 2 * Math.PI * radius;
+        let offsetAccum = 0;
+
+        const circlesHtml = segments.map(seg => {
+          if (seg.val <= 0) return '';
+          const dash = (seg.val / totalForDonut) * circum;
+          const gap = circum - dash;
+          const el = `
+            <circle
+              cx="90"
+              cy="90"
+              r="${radius}"
+              fill="transparent"
+              stroke="${seg.color}"
+              stroke-width="24"
+              stroke-dasharray="${dash} ${gap}"
+              stroke-dashoffset="${-offsetAccum}"
+            />
+          `;
+          offsetAccum += dash;
+          return el;
+        }).join('');
+
+        donutBox.innerHTML = `
+          <svg width="180" height="180" viewBox="0 0 180 180" class="-rotate-90">
+            <circle cx="90" cy="90" r="${radius}" fill="transparent" stroke="#E2E8F0" stroke-width="24" />
+            ${circlesHtml}
+          </svg>
+        `;
+      }
+    }
+
+    // ====================================================
     // TABEL MANAJEMEN GURU, VERIFIKASI, & LAPORAN (ADMIN)
     // ====================================================
     function renderAdminAllTables() {
       const totalGuru = state.teachers.length;
-      const totalHadir = state.attendances.filter(a => a.check_in_time).length;
+      const totalHadir = state.attendances.filter(a => a.check_in_time && getAttendanceDisplayStatus(a) !== 'Terlambat').length;
       const totalDinas = state.leaveRequests.filter(l => l.status === 'Diterima').length;
       const totalIzin = state.attendances.filter(a => a.notes === 'Sakit').length;
-      const totalFaceReady = state.teachers.filter(t => t.face_registered).length;
       const pendingCount = state.leaveRequests.filter(l => l.status === 'Menunggu').length;
 
       // Statistik Monitoring
@@ -4609,18 +5072,6 @@
       document.getElementById('stat-total-hadir').textContent = totalHadir;
       document.getElementById('stat-total-dinas').textContent = totalDinas;
       document.getElementById('stat-total-izin').textContent = totalIzin;
-
-      // Statistik & Grafik pada Tab Dashboard & Grafik
-      const elDashGuru = document.getElementById('dash-stat-total-guru');
-      const elDashFace = document.getElementById('dash-stat-face-ready');
-      const elDashHadir = document.getElementById('dash-stat-total-hadir');
-      const elDashDinas = document.getElementById('dash-stat-total-dinas');
-      const elDashPending = document.getElementById('dash-stat-total-pending');
-      if (elDashGuru) elDashGuru.textContent = totalGuru;
-      if (elDashFace) elDashFace.textContent = `${totalFaceReady} dari ${totalGuru} Wajah Terdaftar`;
-      if (elDashHadir) elDashHadir.textContent = totalHadir;
-      if (elDashDinas) elDashDinas.textContent = totalDinas;
-      if (elDashPending) elDashPending.textContent = pendingCount;
 
       // Sinkronisasi Badge Jumlah Pending & Pengumuman di Desktop Sidebar dan Mobile Slide-Over Drawer
       document.getElementById('admin-pending-badge').textContent = pendingCount;
@@ -4633,117 +5084,87 @@
       if (sideAnnBadge) sideAnnBadge.textContent = annCount;
       if (drawerAnnBadge) drawerAnnBadge.textContent = annCount;
 
-      // Render Visual Grafik Bar Distribusi di Tab Dashboard & Grafik
-      const chartContainer = document.getElementById('admin-dashboard-chart-bars');
-      if (chartContainer) {
-        const baseMax = Math.max(totalGuru, totalHadir + totalDinas + totalIzin, 1);
-        const pctFace = totalGuru > 0 ? Math.min(100, Math.round((totalFaceReady / totalGuru) * 100)) : 0;
-        const pctHadir = Math.min(100, Math.round((totalHadir / baseMax) * 100));
-        const pctDinas = Math.min(100, Math.round((totalDinas / baseMax) * 100));
-        const pctPending = state.leaveRequests.length > 0
-          ? Math.min(100, Math.round((pendingCount / state.leaveRequests.length) * 100))
-          : 0;
+      // Render Analitik Dashboard (4 Kartu Berwarna + Tren 7 Hari + Donut Chart)
+      renderAdminDashboardAnalytics();
 
-        chartContainer.innerHTML = `
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-700">Kesiapan Biometrik Wajah Guru</span>
-              <span class="font-extrabold text-emerald-700">${totalFaceReady} / ${totalGuru} (${pctFace}%)</span>
-            </div>
-            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${pctFace}%"></div>
-            </div>
-          </div>
-
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-700">Rekaman Kehadiran (Check-In/Out GPS)</span>
-              <span class="font-extrabold text-blue-700">${totalHadir} Rekaman (${pctHadir}%)</span>
-            </div>
-            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: ${pctHadir}%"></div>
-            </div>
-          </div>
-
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-700">Dinas Luar &amp; WFA/H Disetujui</span>
-              <span class="font-extrabold text-indigo-700">${totalDinas} Dokumen (${pctDinas}%)</span>
-            </div>
-            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: ${pctDinas}%"></div>
-            </div>
-          </div>
-
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-700">Permohonan Menunggu Verifikasi</span>
-              <span class="font-extrabold text-amber-700">${pendingCount} Menunggu (${pctPending}%)</span>
-            </div>
-            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-amber-500 rounded-full transition-all duration-500" style="width: ${pctPending}%"></div>
-            </div>
-          </div>
-        `;
-      }
-
-      // 1. Tabel Monitoring Presensi
+      // 1. Tabel Monitoring Presensi (Sesuai Referensi Gambar 5)
       const monTbody = document.getElementById('admin-monitoring-tbody');
       if (!state.attendances.length) {
         monTbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada data presensi tercatat.</td></tr>`;
       } else {
         monTbody.innerHTML = state.attendances.map(a => {
           const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
+          const dispStatus = getAttendanceDisplayStatus(a);
+          const statusBadgeClass = dispStatus === 'Terlambat'
+            ? 'bg-amber-50 text-amber-700 border border-amber-200/70'
+            : 'bg-emerald-50 text-emerald-700 border border-emerald-200/70';
+          const durText = a.work_duration || (a.check_out_time ? '-' : 'Sedang bertugas');
           return `
-            <tr>
-              <td class="py-3 px-3 font-mono font-semibold text-slate-700">${a.attendance_date}</td>
-              <td class="py-3 px-3">
-                <div class="font-bold text-slate-900">${t.full_name}</div>
-                <div class="text-[11px] text-slate-400 font-mono">${t.nip}</div>
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="py-3.5 px-3 font-mono font-bold text-slate-700">${escapeHtml(a.attendance_date)}</td>
+              <td class="py-3.5 px-3">
+                <div class="font-extrabold text-slate-900 uppercase">${escapeHtml(t.full_name)}</div>
+                <div class="text-[11px] text-slate-400 font-mono mt-0.5">${escapeHtml(t.nip)}</div>
               </td>
-              <td class="py-3 px-3 font-mono font-bold text-emerald-700">${a.check_in_time || '-'}</td>
-              <td class="py-3 px-3 font-mono font-bold text-slate-700">${a.check_out_time || '-'}</td>
-              <td class="py-3 px-3 text-slate-600">${a.work_duration || a.notes || '-'} (${a.distance_meters || 0}m)</td>
-              <td class="py-3 px-3">
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">${a.status}</span>
+              <td class="py-3.5 px-3 font-mono font-bold text-emerald-700">${escapeHtml(a.check_in_time || '-')}</td>
+              <td class="py-3.5 px-3 font-mono font-semibold text-slate-700">${escapeHtml(a.check_out_time || '-')}</td>
+              <td class="py-3.5 px-3 text-slate-600">${escapeHtml(durText)} (${a.distance_meters || 0}m)</td>
+              <td class="py-3.5 px-3">
+                <span class="px-3 py-1 rounded-full text-[11px] font-bold ${statusBadgeClass}">${escapeHtml(dispStatus)}</span>
               </td>
             </tr>
           `;
         }).join('');
       }
 
-      // 2. Tabel Data Guru & Biometrik
+      // 2. Tabel Data Guru & Biometrik Wajah (Sesuai Referensi Gambar 2)
       const tchTbody = document.getElementById('admin-teachers-tbody');
       if (!state.teachers.length) {
         tchTbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada data guru di database.</td></tr>`;
       } else {
-        tchTbody.innerHTML = state.teachers.map(t => `
-          <tr>
-            <td class="py-3 px-3 font-bold text-slate-900 uppercase">${t.full_name}</td>
-            <td class="py-3 px-3">
-              <div class="font-mono text-slate-700">${t.nip}</div>
-              <div class="text-[11px] text-slate-400">${t.email}</div>
-            </td>
-            <td class="py-3 px-3 text-slate-600">${t.position || '-'}</td>
-            <td class="py-3 px-3">
-              ${t.face_registered
-                ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700"><i data-lucide="check" class="w-3 h-3"></i> Terdaftar</span>`
-                : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">Belum Rekam</span>`
-              }
-            </td>
-            <td class="py-3 px-3 text-right space-x-1">
-              <button onclick="window.app.resetTeacherFace('${t.id}')" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[11px]" title="Reset Wajah">
-                Reset Wajah
-              </button>
-              <button onclick="window.app.openTeacherModal('${t.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">
-                Edit
-              </button>
-              <button onclick="window.app.deleteTeacher('${t.id}')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px]">
-                Hapus
-              </button>
-            </td>
-          </tr>
-        `).join('');
+        tchTbody.innerHTML = state.teachers.map(t => {
+          const initial = ((t.full_name || 'G').trim()[0] || 'G').toUpperCase();
+          const avatarHtml = (t.face_registered && t.face_photo_url)
+            ? `<img src="${t.face_photo_url}" alt="${escapeHtml(t.full_name)}" class="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500 shrink-0" />`
+            : `<div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-navy-900 font-extrabold text-xs flex items-center justify-center shrink-0">${escapeHtml(initial)}</div>`;
+
+          const biometricBadgeHtml = t.face_registered
+            ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Sudah Rekam</span>`
+            : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-200"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Belum Rekam</span>`;
+
+          return `
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="py-3.5 px-3">
+                <div class="flex items-center gap-3">
+                  ${avatarHtml}
+                  <div class="min-w-0">
+                    <div class="font-extrabold text-slate-900 uppercase leading-snug">${escapeHtml(t.full_name)}</div>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5">${escapeHtml(t.nip)}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3.5 px-3">
+                <div class="font-mono font-bold text-slate-800">${escapeHtml(t.nip)}</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(t.email)}</div>
+              </td>
+              <td class="py-3.5 px-3 text-slate-600 font-medium">${escapeHtml(t.position || '-')}</td>
+              <td class="py-3.5 px-3">
+                ${biometricBadgeHtml}
+              </td>
+              <td class="py-3.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                <button onclick="window.app.resetTeacherFace('${t.id}')" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] transition" title="Reset Wajah">
+                  Reset Wajah
+                </button>
+                <button onclick="window.app.openTeacherModal('${t.id}')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
+                  Edit
+                </button>
+                <button onclick="window.app.deleteTeacher('${t.id}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] transition">
+                  Hapus
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
       }
 
       // 3. Tabel Verifikasi Dinas Luar & WFA/Izin
@@ -4760,15 +5181,15 @@
             : 'bg-amber-100 text-amber-800';
           return `
             <tr>
-              <td class="py-3 px-3 font-mono font-semibold text-slate-700">${l.request_date}</td>
+              <td class="py-3 px-3 font-mono font-semibold text-slate-700">${escapeHtml(l.request_date)}</td>
               <td class="py-3 px-3">
-                <div class="font-bold text-slate-900">${t.full_name}</div>
-                <div class="text-[11px] text-slate-400 font-mono">${t.nip}</div>
+                <div class="font-bold text-slate-900">${escapeHtml(t.full_name)}</div>
+                <div class="text-[11px] text-slate-400 font-mono">${escapeHtml(t.nip)}</div>
               </td>
-              <td class="py-3 px-3 font-bold text-slate-700">${l.request_type} (${l.duration_type})</td>
-              <td class="py-3 px-3 text-slate-600 max-w-xs">${l.description}</td>
+              <td class="py-3 px-3 font-bold text-slate-700">${escapeHtml(l.request_type)} (${escapeHtml(l.duration_type)})</td>
+              <td class="py-3 px-3 text-slate-600 max-w-xs">${escapeHtml(l.description)}</td>
               <td class="py-3 px-3">
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeClass}">${l.status}</span>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeClass}">${escapeHtml(l.status)}</span>
               </td>
               <td class="py-3 px-3 text-right space-x-1">
                 <button onclick="window.app.updateLeaveStatus('${l.id}', 'Diterima')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px]">
@@ -4783,24 +5204,11 @@
         }).join('');
       }
 
-      // 4. Tabel Laporan
-      const repTbody = document.getElementById('admin-report-tbody');
-      repTbody.innerHTML = state.attendances.map(a => {
-        const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
-        return `
-          <tr>
-            <td class="py-2.5 px-3 font-mono">${a.attendance_date}</td>
-            <td class="py-2.5 px-3 font-mono">${t.nip}</td>
-            <td class="py-2.5 px-3 font-bold">${t.full_name}</td>
-            <td class="py-2.5 px-3 font-mono">${a.check_in_time || '-'}</td>
-            <td class="py-2.5 px-3 font-mono">${a.check_out_time || '-'}</td>
-            <td class="py-2.5 px-3">${a.work_duration || '-'}</td>
-            <td class="py-2.5 px-3 font-bold text-emerald-700">${a.status}</td>
-          </tr>
-        `;
-      }).join('');
+      // 4. Dropdown Filter & Tabel Rekap Laporan (Sesuai Referensi Gambar 4)
+      populateReportFilterTeacherDropdown();
+      renderAdminReportTableOnly();
 
-      // 5. Daftar Pengumuman & Pesan
+      // 5. Daftar Pengumuman & Pesan (Sesuai Referensi Gambar 3)
       renderAdminAnnouncementsList();
       renderGuruAnnouncementBadge();
 
@@ -4808,66 +5216,140 @@
     }
 
     // ====================================================
+    // MODAL INPUT PRESENSI MANUAL OLEH ADMIN
+    // ====================================================
+    function openManualAttendanceModal() {
+      if (!state.teachers.length) {
+        showToast('Tambahkan data Guru terlebih dahulu sebelum mencatat presensi manual.', 'warning');
+        return;
+      }
+      const sel = document.getElementById('manual-att-teacher');
+      if (sel) {
+        sel.innerHTML = state.teachers.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.full_name)} (${escapeHtml(t.nip)})</option>`).join('');
+      }
+      document.getElementById('manual-att-date').value = getTodayISO();
+      document.getElementById('manual-att-status').value = 'Hadir';
+      document.getElementById('manual-att-in').value = '07:15:00';
+      document.getElementById('manual-att-out').value = '16:00:00';
+      document.getElementById('modal-admin-manual-attendance').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeManualAttendanceModal() {
+      document.getElementById('modal-admin-manual-attendance').classList.add('hidden');
+    }
+
+    async function saveManualAttendanceFromAdmin(event) {
+      event.preventDefault();
+      const teacherId = document.getElementById('manual-att-teacher').value;
+      const attDate = document.getElementById('manual-att-date').value;
+      const statusVal = document.getElementById('manual-att-status').value;
+      const inTime = document.getElementById('manual-att-in').value || null;
+      const outTime = document.getElementById('manual-att-out').value || null;
+
+      const duration = (inTime && outTime) ? formatDuration(inTime, outTime) : (outTime ? '-' : 'Sedang bertugas');
+      const newRec = {
+        id: 'att-man-' + Date.now(),
+        teacher_id: teacherId,
+        attendance_date: attDate,
+        check_in_time: statusVal === 'Sakit' ? null : inTime,
+        check_out_time: statusVal === 'Sakit' ? null : outTime,
+        work_duration: statusVal === 'Sakit' ? null : duration,
+        status: statusVal,
+        notes: statusVal === 'Sakit' ? 'Sakit' : 'Presensi Manual Admin',
+        distance_meters: 10
+      };
+
+      if (!IS_PREVIEW) {
+        const { data, error } = await supabase
+          .from('attendances')
+          .insert([{
+            teacher_id: newRec.teacher_id,
+            attendance_date: newRec.attendance_date,
+            check_in_time: newRec.check_in_time,
+            check_out_time: newRec.check_out_time,
+            work_duration: newRec.work_duration,
+            status: newRec.status,
+            notes: newRec.notes,
+            distance_meters: newRec.distance_meters
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          showToast('Gagal menyimpan presensi manual: ' + error.message, 'error');
+          return;
+        }
+        state.attendances.unshift(data);
+      } else {
+        state.attendances.unshift(newRec);
+      }
+
+      closeManualAttendanceModal();
+      renderAdminAllTables();
+      showToast('Presensi manual berhasil dicatat.', 'success');
+    }
+
+    // ====================================================
     // FITUR PENGUMUMAN & PESAN (ADMIN <-> NOTIFIKASI GURU)
     // ====================================================
     function getPriorityBadgeStyle(priority) {
-      if (priority === 'Mendesak') return 'bg-rose-100 text-rose-700 border-rose-200';
-      if (priority === 'Penting') return 'bg-amber-100 text-amber-800 border-amber-200';
-      return 'bg-blue-100 text-blue-700 border-blue-200';
+      const p = String(priority || '').toLowerCase();
+      if (p.includes('penting') || p.includes('mendesak')) {
+        return 'bg-rose-50 text-rose-600 border-rose-200';
+      }
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     }
 
     function formatAnnouncementTime(isoStr) {
       if (!isoStr) return getTodayISO();
-      const d = new Date(isoStr);
-      if (isNaN(d)) return String(isoStr);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = months[d.getMonth()];
-      const yyyy = d.getFullYear();
-      const hms = d.toTimeString().split(' ')[0].slice(0, 5);
-      return `${dd} ${mm} ${yyyy} • ${hms} WIB`;
+      return String(isoStr);
     }
 
     function renderAdminAnnouncementsList() {
       const container = document.getElementById('admin-announcements-list');
       const countLabel = document.getElementById('ann-total-count-label');
-      if (countLabel) countLabel.textContent = `${state.announcements.length} Pengumuman`;
+      if (countLabel) countLabel.textContent = `${state.announcements.length} PESAN`;
       if (!container) return;
 
       if (!state.announcements.length) {
         container.innerHTML = `
           <div class="py-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-2xl">
-            Belum ada pengumuman aktif. Buat pengumuman di formulir sebelah kiri agar tampil di aplikasi Guru.
+            Belum ada pengumuman terkirim. Buat pengumuman di formulir sebelah kiri agar tampil di aplikasi Guru.
           </div>
         `;
         return;
       }
 
       container.innerHTML = state.announcements.map(ann => {
+        const isUrgent = String(ann.priority || '').toLowerCase().includes('penting') || String(ann.priority || '').toLowerCase().includes('mendesak');
+        const badgeLabel = isUrgent ? 'Penting' : 'Informasi';
         const badgeCls = getPriorityBadgeStyle(ann.priority);
+        const targetText = ann.target_audience || 'Semua Guru & Pegawai';
         return `
-          <div class="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white transition space-y-2">
+          <div class="p-4 rounded-2xl border border-slate-200/90 bg-white hover:shadow-sm transition space-y-1.5">
             <div class="flex items-start justify-between gap-2.5">
-              <div class="space-y-1 min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badgeCls}">
-                    ${escapeHtml(ann.priority || 'Info Umum')}
-                  </span>
-                  <span class="text-[11px] text-slate-400 font-semibold tabular-clock">
-                    ${escapeHtml(formatAnnouncementTime(ann.created_at))}
-                  </span>
-                </div>
-                <h4 class="text-sm font-extrabold text-slate-900 leading-snug">${escapeHtml(ann.title)}</h4>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold border ${badgeCls}">
+                  ${escapeHtml(badgeLabel)}
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono">
+                  ${escapeHtml(formatAnnouncementTime(ann.created_at))}
+                </span>
+                <span class="text-[11px] font-bold text-blue-600">
+                  &bull; ${escapeHtml(targetText)}
+                </span>
               </div>
               <button
                 type="button"
                 onclick="window.app.deleteAnnouncement('${ann.id}')"
-                class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 shrink-0 transition"
+                class="p-1 text-slate-400 hover:text-rose-600 shrink-0 transition"
                 title="Hapus Pengumuman"
               >
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
+            <h4 class="text-sm font-extrabold text-slate-900 uppercase leading-snug pt-0.5">${escapeHtml(ann.title)}</h4>
             <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(ann.message)}</p>
           </div>
         `;
@@ -4877,6 +5359,7 @@
     async function createAnnouncement(event) {
       event.preventDefault();
       const title = document.getElementById('ann-input-title').value.trim();
+      const targetAudience = document.getElementById('ann-input-target')?.value || 'Semua Guru & Pegawai';
       const priority = document.getElementById('ann-input-priority').value;
       const message = document.getElementById('ann-input-message').value.trim();
 
@@ -4887,7 +5370,8 @@
 
       const newAnn = {
         id: 'ann-' + Date.now(),
-        title,
+        title: title.toUpperCase(),
+        target_audience: targetAudience,
         priority,
         message,
         created_by: state.currentUser?.email || 'Administrator',
@@ -4907,9 +5391,8 @@
           .single();
 
         if (!error && data) {
-          state.announcements.unshift(data);
+          state.announcements.unshift({ ...data, target_audience: targetAudience });
         } else {
-          // Fallback simpan ke state & localStorage jika tabel announcements belum dieksekusi di SQL Editor
           state.announcements.unshift(newAnn);
         }
       } else {
@@ -4923,7 +5406,7 @@
       document.getElementById('ann-input-title').value = '';
       document.getElementById('ann-input-message').value = '';
       renderAdminAllTables();
-      showToast('Pengumuman berhasil dipublikasikan ke seluruh Guru!', 'success');
+      showToast('Pengumuman berhasil dikirim ke seluruh Guru!', 'success');
     }
 
     async function deleteAnnouncement(annId) {
@@ -4974,18 +5457,20 @@
         `;
       } else {
         listEl.innerHTML = state.announcements.map(ann => {
+          const isUrgent = String(ann.priority || '').toLowerCase().includes('penting') || String(ann.priority || '').toLowerCase().includes('mendesak');
+          const badgeLabel = isUrgent ? 'Penting' : 'Informasi';
           const badgeCls = getPriorityBadgeStyle(ann.priority);
           return `
             <div class="p-4 rounded-2xl border border-slate-200/90 bg-slate-50/70 space-y-1.5 text-left">
               <div class="flex items-center justify-between gap-2 flex-wrap">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badgeCls}">
-                  ${escapeHtml(ann.priority || 'Info Umum')}
+                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold border ${badgeCls}">
+                  ${escapeHtml(badgeLabel)}
                 </span>
-                <span class="text-[10px] font-semibold text-slate-400 tabular-clock">
+                <span class="text-[10px] font-mono text-slate-400">
                   ${escapeHtml(formatAnnouncementTime(ann.created_at))}
                 </span>
               </div>
-              <h4 class="text-sm font-extrabold text-navy-900 leading-snug pt-0.5">${escapeHtml(ann.title)}</h4>
+              <h4 class="text-sm font-extrabold text-navy-900 uppercase leading-snug pt-0.5">${escapeHtml(ann.title)}</h4>
               <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(ann.message)}</p>
             </div>
           `;
@@ -5141,12 +5626,13 @@
     }
 
     function exportAttendanceCSV() {
-      if (!state.attendances.length) {
+      const filtered = getFilteredReportAttendances();
+      if (!filtered.length) {
         showToast('Tidak ada data presensi untuk diekspor.', 'warning');
         return;
       }
-      const headers = ['Tanggal', 'NIP', 'Nama Lengkap', 'Jam Masuk', 'Jam Pulang', 'Durasi Kerja', 'Jarak GPS (m)', 'Status'];
-      const rows = state.attendances.map(a => {
+      const headers = ['Tanggal', 'NIP/NUPTK', 'Nama Lengkap', 'Jam Masuk', 'Jam Pulang', 'Durasi Kerja', 'Jarak GPS (m)', 'Status'];
+      const rows = filtered.map(a => {
         const t = state.teachers.find(x => x.id === a.teacher_id) || { full_name: 'Pegawai', nip: '-' };
         return [
           a.attendance_date,
@@ -5156,7 +5642,7 @@
           a.check_out_time || '-',
           `"${a.work_duration || '-'}"`,
           a.distance_meters || 0,
-          a.status
+          getAttendanceDisplayStatus(a)
         ].join(',');
       });
 
@@ -5234,14 +5720,12 @@
     }
 
     function handleInstallPWA() {
-      // Cek apakah sudah berjalan dalam mode standalone PWA
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       if (isStandalone) {
         showToast('Aplikasi SiHadir sudah berjalan dalam mode Standalone PWA.', 'success');
         return;
       }
 
-      // Buka panel/modal instalasi cepat SiHadir
       const modal = document.getElementById('modal-pwa-install-guide');
       const manualBox = document.getElementById('pwa-manual-guide-box');
       if (manualBox) manualBox.classList.add('hidden');
@@ -5250,7 +5734,6 @@
     }
 
     async function triggerPWAInstallAction() {
-      // Jika deferredPrompt (beforeinstallprompt) tersedia di Android/Chrome, langsung eksekusi prompt native
       if (state.deferredPWAPrompt) {
         try {
           await state.deferredPWAPrompt.prompt();
@@ -5264,7 +5747,6 @@
         } catch (_) {}
       }
 
-      // Jika browser tidak memicu beforeinstallprompt, tampilkan panduan visual 2 langkah singkat
       const manualBox = document.getElementById('pwa-manual-guide-box');
       if (manualBox) {
         manualBox.classList.remove('hidden');
@@ -5278,7 +5760,6 @@
     }
 
     function registerSingleFilePWA() {
-      // Manifest dinamis dengan identitas aplikasi "SiHadir" serta ikon PNG valid 192x192 & 512x512
       try {
         const currentUrl = window.location.href.split('#')[0];
         const dynamicManifest = {
@@ -5315,8 +5796,23 @@
 
       if ('serviceWorker' in navigator) {
         const swCode = `
-          self.addEventListener('install', (e) => self.skipWaiting());
-          self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+          const CACHE_NAME = 'sihadir-pwa-cache-v3.2';
+          self.addEventListener('install', (e) => {
+            self.skipWaiting();
+          });
+          self.addEventListener('activate', (e) => {
+            e.waitUntil(
+              caches.keys().then((names) =>
+                Promise.all(
+                  names.map((name) => {
+                    if (name !== CACHE_NAME) {
+                      return caches.delete(name);
+                    }
+                  })
+                )
+              ).then(() => self.clients.claim())
+            );
+          });
           self.addEventListener('fetch', (e) => {
             return;
           });
@@ -5372,6 +5868,12 @@
       handleImportTeachersExcel,
       exportVerificationPDF,
       exportAttendancePDF,
+      exportAttendanceExcel,
+      applyReportFilters,
+      resetReportFilters,
+      openManualAttendanceModal,
+      closeManualAttendanceModal,
+      saveManualAttendanceFromAdmin,
       closePrintPreviewModal,
       handleInstallPWA,
       triggerPWAInstallAction,
@@ -5393,6 +5895,8 @@
 
     // INISIALISASI SAAT HALAMAN DIMUAT
     window.addEventListener('DOMContentLoaded', async () => {
+      clearLoginInputs();
+      setTimeout(clearLoginInputs, 150);
       lucide.createIcons();
       startRealTimeClocks();
       setupPWAInstallHandlers();
