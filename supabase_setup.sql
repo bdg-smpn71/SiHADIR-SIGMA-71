@@ -127,10 +127,12 @@ CREATE TABLE IF NOT EXISTS public.announcements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     message TEXT NOT NULL,
-    priority TEXT NOT NULL DEFAULT 'Info Umum',
+    priority TEXT NOT NULL DEFAULT 'Informasi',
+    target_audience TEXT DEFAULT 'Semua Guru & Pegawai',
     created_by TEXT DEFAULT 'Administrator',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS target_audience TEXT DEFAULT 'Semua Guru & Pegawai';
 
 -- ============================================================================
 -- KONFIGURASI ROW LEVEL SECURITY (RLS) UNTUK ARSITEKTUR HYBRID LOGIN
